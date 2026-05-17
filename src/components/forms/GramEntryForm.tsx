@@ -21,6 +21,7 @@ interface GramEntryFormProps {
 export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProps) {
   const [grams, setGrams] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const isOnline = useOnlineStatus()
@@ -71,6 +72,8 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
     if (numericGrams <= 0) return
 
     setIsSubmitting(true)
+    setStatusMessage(null)
+
     const result = await executeLogAction('FOOD', {
       foodItemId: foodItem.id,
       weightGrams: numericGrams,
@@ -78,11 +81,14 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
     }, isOnline)
     
     if (result?.error) {
-      alert(result.error)
+      setStatusMessage({ type: 'error', text: result.error })
       setIsSubmitting(false)
     } else {
       setPreview(null)
-      onSuccess?.()
+      setStatusMessage({ type: 'success', text: 'Transmission complete. Logged.' })
+      setTimeout(() => {
+        onSuccess?.()
+      }, 1500)
     }
   }
 
@@ -96,17 +102,21 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
 
       <div className="space-y-2">
         <div className="relative">
+          <label htmlFor="grams-input" className="sr-only">Weight in grams</label>
           <input
+            id="grams-input"
             ref={inputRef}
             type="number"
             inputMode="decimal"
             value={grams}
             onChange={(e) => setGrams(e.target.value)}
-            className="block w-full border-0 bg-transparent py-10 text-center font-mono text-7xl font-bold text-[#00FF41] placeholder-zinc-800 focus:ring-0 sm:text-8xl"
+            className="block w-full border-0 bg-transparent py-10 text-center font-mono text-7xl font-bold text-[#00FF41] placeholder-zinc-800 focus:ring-0 sm:text-8xl focus-visible:ring-2 focus-visible:ring-[#00FF41]/20 rounded-xl"
             placeholder="0"
             required
+            aria-invalid={statusMessage?.type === 'error'}
+            aria-describedby={statusMessage ? "form-status" : undefined}
           />
-          <span className="absolute bottom-2 left-1/2 -translate-x-1/2 font-mono text-sm font-bold text-zinc-600 uppercase">
+          <span className="absolute bottom-2 left-1/2 -translate-x-1/2 font-mono text-sm font-bold text-zinc-600 uppercase" aria-hidden="true">
             Grams
           </span>
         </div>
@@ -114,10 +124,17 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
 
       {/* Goal Impact Visualization */}
       {proteinGoal > 0 && (
-        <div className="space-y-3 rounded-xl bg-white/5 p-4 ring-1 ring-white/10">
+        <div 
+          className="space-y-3 rounded-xl bg-white/5 p-4 ring-1 ring-white/10"
+          role="progressbar"
+          aria-label="Protein Goal Impact"
+          aria-valuenow={Math.round(currentProteinPercent + proteinImpactPercent)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <div className="flex justify-between font-mono text-[10px] uppercase tracking-wider text-zinc-400">
             <span>Protein Goal Impact</span>
-            <span className="text-[#00FF41]">+{proteinImpactPercent.toFixed(1)}%</span>
+            <span className="text-[#00FF41]" aria-live="polite">+{proteinImpactPercent.toFixed(1)}%</span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-900">
             <div 
@@ -140,7 +157,7 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
         </div>
       )}
 
-      <div className="grid grid-cols-4 gap-2 border-y border-white/5 py-6">
+      <div className="grid grid-cols-4 gap-2 border-y border-white/5 py-6" aria-label="Scaled Nutrients">
         <div className="text-center">
           <p className="font-mono text-lg font-bold text-white">{scaled.protein.toFixed(1)}</p>
           <p className="text-[10px] text-zinc-500 uppercase tracking-tighter">Protein</p>
@@ -159,10 +176,18 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
         </div>
       </div>
 
+      <div id="form-status" aria-live="assertive" className="text-center min-h-[1.5rem]">
+        {statusMessage && (
+          <p className={`font-mono text-xs uppercase font-bold ${statusMessage.type === 'error' ? 'text-red-500' : 'text-[#00FF41]'}`}>
+            {statusMessage.text}
+          </p>
+        )}
+      </div>
+
       <button
         type="submit"
         disabled={isSubmitting || numericGrams <= 0}
-        className="w-full rounded-xl bg-[#00FF41] py-5 text-xl font-bold text-black transition-all hover:bg-[#00FF41]/90 disabled:opacity-30 disabled:grayscale"
+        className="w-full rounded-xl bg-[#00FF41] py-5 text-xl font-bold text-black transition-all hover:bg-[#00FF41]/90 disabled:opacity-30 disabled:grayscale focus-visible:ring-4 focus-visible:ring-[#00FF41]/40 outline-none"
       >
         {isSubmitting ? 'TRANSMITTING...' : 'LOG ENTRY'}
       </button>

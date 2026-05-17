@@ -8,33 +8,36 @@ import { redirect } from 'next/navigation'
 import { TrainingCategory } from '@prisma/client'
 
 export async function logWorkout(formData: FormData) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { error: 'Unauthorized' }
-  }
-
-  const category = formData.get('category') as TrainingCategory
-  const duration = parseInt(formData.get('duration') as string)
-  const intensity = parseInt(formData.get('intensity') as string)
-
-  if (!category || !['PUSH', 'PULL', 'LEGS'].includes(category)) {
-    return { error: 'Invalid category' }
-  }
-
-  if (isNaN(duration) || duration <= 0) {
-    return { error: 'Invalid duration' }
-  }
-
-  if (isNaN(intensity) || intensity < 1 || intensity > 10) {
-    return { error: 'Intensity must be between 1 and 10' }
-  }
-
   try {
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return { error: 'Unauthorized', status: 401 }
+    }
+
+    const categoryInput = formData.get('category') as string
+    const duration = parseInt(formData.get('duration') as string)
+    const intensity = parseInt(formData.get('intensity') as string)
+
+    // Validate TrainingCategory enum
+    if (!Object.values(TrainingCategory).includes(categoryInput as TrainingCategory)) {
+      return { error: 'Invalid training category', status: 400 }
+    }
+    const category = categoryInput as TrainingCategory
+
+    if (isNaN(duration) || duration <= 0) {
+      return { error: 'Invalid duration', status: 400 }
+    }
+
+    if (isNaN(intensity) || intensity < 1 || intensity > 10) {
+      return { error: 'Intensity must be between 1 and 10', status: 400 }
+    }
+
     const { versionId } = await MetabolicMotor.getContext()
 
     await prisma.workoutLog.create({
@@ -51,7 +54,7 @@ export async function logWorkout(formData: FormData) {
     return { success: true }
   } catch (e) {
     console.error('Error logging workout:', e)
-    return { error: 'Failed to record session' }
+    return { error: 'Failed to record session', status: 500 }
   }
 }
 
@@ -63,17 +66,27 @@ export async function recordSubjectiveFeedback(
     predictedFatigue: number
   }
 ) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { error: 'Unauthorized' }
-  }
-
   try {
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return { error: 'Unauthorized', status: 401 }
+    }
+
+    // Metric range validation (Patch 2)
+    if (data.rating < 1 || data.rating > 10) {
+      return { error: 'Rating must be between 1 and 10', status: 400 }
+    }
+
+    if (data.predictedFatigue < 1 || data.predictedFatigue > 10) {
+      return { error: 'Predicted fatigue must be between 1 and 10', status: 400 }
+    }
+
     await prisma.workoutLog.update({
       where: {
         id: workoutId,
@@ -90,6 +103,6 @@ export async function recordSubjectiveFeedback(
     return { success: true }
   } catch (e) {
     console.error('Error recording feedback:', e)
-    return { error: 'Failed to synchronize calibration' }
+    return { error: 'Failed to synchronize calibration', status: 500 }
   }
 }

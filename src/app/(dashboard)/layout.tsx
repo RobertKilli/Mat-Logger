@@ -75,7 +75,9 @@ export default async function DashboardLayout({
         </div>
       </header>
 
-      {children}
+      <main id="main-content" className="flex-1">
+        {children}
+      </main>
     </div>
   )
 }

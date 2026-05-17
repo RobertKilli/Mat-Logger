@@ -9,6 +9,7 @@ export default function SyncStatus() {
   const isOnline = useOnlineStatus()
   const pendingCount = useCockpitStore((state) => state.pendingSyncQueue.length)
   const isSyncing = useCockpitStore((state) => state.isSyncing)
+  const syncError = useCockpitStore((state) => state.syncError)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -28,10 +29,25 @@ export default function SyncStatus() {
   }
 
   return (
-    <div className="flex items-center gap-4">
-      {!isOnline && (
-        <div className="flex items-center gap-1.5 rounded-full bg-red-500/10 px-3 py-1 ring-1 ring-red-500/20">
-          <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+    <div className="flex items-center gap-4" role="status" aria-live="polite">
+      {syncError && (
+        <div 
+          className="flex items-center gap-1.5 rounded-full bg-red-500/10 px-3 py-1 ring-1 ring-red-500/20"
+          aria-label={`Synchronization failed: ${syncError}`}
+        >
+          <div className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden="true" />
+          <span className="font-mono text-[9px] font-bold text-red-500 uppercase tracking-tighter">
+            Sync failed: {syncError}
+          </span>
+        </div>
+      )}
+
+      {!isOnline && !syncError && (
+        <div 
+          className="flex items-center gap-1.5 rounded-full bg-red-500/10 px-3 py-1 ring-1 ring-red-500/20"
+          aria-label="System is currently offline"
+        >
+          <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" aria-hidden="true" />
           <span className="font-mono text-[9px] font-bold text-red-500 uppercase tracking-tighter">
             Offline Mode
           </span>
@@ -39,8 +55,11 @@ export default function SyncStatus() {
       )}
 
       {isSyncing && (
-        <div className="flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1 ring-1 ring-blue-500/20">
-          <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-spin" />
+        <div 
+          className="flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1 ring-1 ring-blue-500/20"
+          aria-label="Synchronizing data with cloud"
+        >
+          <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-spin" aria-hidden="true" />
           <span className="font-mono text-[9px] font-bold text-blue-500 uppercase tracking-tighter">
             Syncing...
           </span>
@@ -48,8 +67,11 @@ export default function SyncStatus() {
       )}
 
       {!isSyncing && pendingCount > 0 && (
-        <div className="flex items-center gap-1.5 rounded-full bg-[#00FF41]/10 px-3 py-1 ring-1 ring-[#00FF41]/20">
-          <div className="h-1.5 w-1.5 rounded-full bg-[#00FF41] animate-bounce" />
+        <div 
+          className="flex items-center gap-1.5 rounded-full bg-[#00FF41]/10 px-3 py-1 ring-1 ring-[#00FF41]/20"
+          aria-label={`${pendingCount} items waiting to be saved`}
+        >
+          <div className="h-1.5 w-1.5 rounded-full bg-[#00FF41] animate-bounce" aria-hidden="true" />
           <span className="font-mono text-[9px] font-bold text-[#00FF41] uppercase tracking-tighter">
             {pendingCount} Pending Sync
           </span>

@@ -23,19 +23,32 @@ export default function GlycogenClock() {
 
   // Color logic
   let color = '#00FF41' // Green
-  if (projectedPercentage < 30) color = '#EF4444' // Red
-  else if (projectedPercentage < 70) color = '#F59E0B' // Orange
+  let statusText = 'OPTIMAL'
+  if (projectedPercentage < 30) {
+    color = '#EF4444' // Red
+    statusText = 'CRITICAL DEBT'
+  } else if (projectedPercentage < 70) {
+    color = '#F59E0B' // Orange
+    statusText = 'DEPLETING'
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl bg-[#141416] aspect-square ring-1 ring-white/10 shadow-lg relative overflow-hidden">
+    <div 
+      className="flex flex-col items-center justify-center rounded-2xl bg-[#141416] aspect-square ring-1 ring-white/10 shadow-lg relative overflow-hidden"
+      role="meter"
+      aria-label={`Glycogen Level: ${projectedPercentage} percent, ${statusText}`}
+      aria-valuenow={projectedPercentage}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
       
-      <span className="text-[10px] text-zinc-500 uppercase font-mono tracking-widest mb-1">
+      <span className="text-[10px] text-zinc-500 uppercase font-mono tracking-widest mb-1" aria-hidden="true">
         Glycogen
       </span>
 
       <div className="relative flex items-center justify-center">
-        <svg className="h-32 w-32 -rotate-90 transform">
+        <svg className="h-32 w-32 -rotate-90 transform" aria-hidden="true">
           {/* Background circle */}
           <circle
             cx="64"
@@ -73,7 +86,7 @@ export default function GlycogenClock() {
             strokeLinecap="round"
           />
         </svg>
-        <div className="absolute flex flex-col items-center">
+        <div className="absolute flex flex-col items-center" aria-hidden="true">
           <div className="flex items-baseline gap-0.5">
              <span className="text-4xl font-bold font-mono text-white tracking-tighter">
               {projectedPercentage}
@@ -81,17 +94,17 @@ export default function GlycogenClock() {
             <span className="text-sm font-mono text-zinc-600">%</span>
           </div>
           {preview && projectedPercentage !== glycogenLevel && (
-            <span className="text-[8px] font-mono text-[#00FF41] mt-1">
+            <span className="text-[8px] font-mono text-[#00FF41] mt-1" aria-live="polite">
               +{projectedPercentage - glycogenLevel}% EST.
             </span>
           )}
         </div>
       </div>
 
-      <div className="mt-2 flex items-center gap-1">
+      <div className="mt-2 flex items-center gap-1" aria-hidden="true">
         <div className="h-1 w-1 rounded-full animate-pulse" style={{ backgroundColor: color }} />
         <span className="text-[8px] font-mono text-zinc-600 uppercase">
-          {projectedPercentage < 30 ? 'CRITICAL DEBT' : projectedPercentage < 70 ? 'DEPLETING' : 'OPTIMAL'}
+          {statusText}
         </span>
       </div>
     </div>

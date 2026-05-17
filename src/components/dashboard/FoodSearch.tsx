@@ -42,14 +42,16 @@ export default function FoodSearch() {
   return (
     <div className="space-y-6">
       <div className="relative">
+        <label htmlFor="food-search" className="sr-only">Search food library</label>
         <input
+          id="food-search"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="SEARCH FOOD LIBRARY..."
-          className="w-full rounded-xl border-0 bg-white/5 py-4 pl-4 pr-12 font-mono text-sm tracking-widest text-white ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-[#00FF41]"
+          className="w-full rounded-xl border-0 bg-white/5 py-4 pl-4 pr-12 font-mono text-sm tracking-widest text-white ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-[#00FF41] outline-none"
         />
-        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+        <div className="absolute right-4 top-1/2 -translate-y-1/2" aria-hidden="true">
           {isLoading ? (
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#00FF41] border-t-transparent" />
           ) : (
@@ -58,15 +60,16 @@ export default function FoodSearch() {
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2" aria-live="polite" aria-relevant="additions text">
         {results.map((item) => (
           <div
             key={item.id}
-            className="group flex items-center gap-2 rounded-xl bg-[#141416] p-4 ring-1 ring-white/5 transition-all hover:bg-white/5 hover:ring-[#00FF41]/30"
+            className="group flex items-center gap-2 rounded-xl bg-[#141416] p-4 ring-1 ring-white/5 transition-all hover:bg-white/5 hover:ring-[#00FF41]/30 focus-within:ring-2 focus-within:ring-[#00FF41]"
           >
             <Link
               href={`/quick-log?item=${item.id}`}
-              className="flex-1"
+              className="flex-1 outline-none"
+              aria-label={`Log ${item.name}`}
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -90,7 +93,8 @@ export default function FoodSearch() {
             
             <button
               onClick={() => setForkItem(item)}
-              className="rounded-lg bg-zinc-900 px-3 py-2 font-mono text-[10px] font-bold text-zinc-500 hover:bg-[#00FF41] hover:text-black transition-colors"
+              aria-label={`Fork and edit ${item.name}`}
+              className="rounded-lg bg-zinc-900 px-3 py-2 font-mono text-[10px] font-bold text-zinc-500 hover:bg-[#00FF41] hover:text-black transition-colors focus:ring-2 focus:ring-[#00FF41] outline-none"
             >
               FORK
             </button>

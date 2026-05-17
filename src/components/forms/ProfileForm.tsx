@@ -60,11 +60,12 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
               step="0.1"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
-              className="block w-full rounded-lg border-0 bg-white/5 py-4 pl-4 pr-12 font-mono text-2xl font-bold text-white ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-[#00FF41]"
+              className="block w-full rounded-lg border-0 bg-white/5 py-4 pl-4 pr-12 font-mono text-2xl font-bold text-white ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-[#00FF41] outline-none"
               placeholder="0.0"
               required
+              aria-describedby={message ? "profile-status" : undefined}
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-zinc-500">
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-zinc-500" aria-hidden="true">
               KG
             </span>
           </div>
@@ -80,33 +81,36 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
               type="number"
               value={proteinGoal}
               onChange={(e) => setProteinGoal(e.target.value)}
-              className="block w-full rounded-lg border-0 bg-white/5 py-4 pl-4 pr-12 font-mono text-2xl font-bold text-white ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-[#00FF41]"
+              className="block w-full rounded-lg border-0 bg-white/5 py-4 pl-4 pr-12 font-mono text-2xl font-bold text-white ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-[#00FF41] outline-none"
               placeholder="0"
               required
+              aria-describedby={message ? "profile-status" : undefined}
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-zinc-500">
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-zinc-500" aria-hidden="true">
               G
             </span>
           </div>
         </div>
       </div>
 
-      {message && (
-        <div
-          className={`rounded-lg p-4 text-center text-sm font-bold ring-1 ${
-            message.type === 'success'
-              ? 'bg-[#00FF41]/10 text-[#00FF41] ring-[#00FF41]/20'
-              : 'bg-red-500/10 text-red-500 ring-red-500/20'
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
+      <div id="profile-status" aria-live="polite" className="min-h-[1.5rem]">
+        {message && (
+          <div
+            className={`rounded-lg p-4 text-center text-sm font-bold ring-1 ${
+              message.type === 'success'
+                ? 'bg-[#00FF41]/10 text-[#00FF41] ring-[#00FF41]/20'
+                : 'bg-red-500/10 text-red-500 ring-red-500/20'
+            }`}
+          >
+            {message.text}
+          </div>
+        )}
+      </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-[#00FF41] py-4 text-lg font-bold text-black transition-all hover:bg-[#00FF41]/90 disabled:opacity-50"
+        className="w-full rounded-lg bg-[#00FF41] py-4 text-lg font-bold text-black transition-all hover:bg-[#00FF41]/90 disabled:opacity-50 focus-visible:ring-4 focus-visible:ring-[#00FF41]/40 outline-none"
       >
         {loading ? 'CALIBRATING...' : 'UPDATE BASELINE'}
       </button>

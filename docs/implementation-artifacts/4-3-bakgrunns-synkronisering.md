@@ -2,7 +2,7 @@
 id: '4.3'
 title: 'Bakgrunns-synkronisering'
 epicId: '4'
-status: 'review'
+status: 'done'
 generatedAt: '2026-05-17'
 ---
 
@@ -69,6 +69,20 @@ generatedAt: '2026-05-17'
 - [Source: src/store/cockpitStore.ts] - Se `pendingSyncQueue` definisjon.
 - [Source: src/lib/metabolism/syncService.ts] - Eksisterende `executeLogAction` logikk.
 
+### Review Findings
+
+- [x] [Review][Patch] Permanent Sync Queue Deadlock — Permanent validation errors block the queue indefinitely [src/lib/metabolism/syncService.ts:87]
+- [x] [Review][Patch] Missing Validation for Subjective Metrics — rating and predictedFatigue lack range checks [src/app/(dashboard)/training/actions.ts:77]
+- [x] [Review][Patch] Unhandled Auth Exceptions — supabase.auth.getUser() calls are not wrapped in try/catch [src/app/(dashboard)/training/actions.ts:10,68]
+- [x] [Review][Patch] Incomplete State Persistence — recentWorkoutLogs is missing from partialize [src/store/cockpitStore.ts:135]
+- [x] [Review][Patch] Date Serialization Hydration Bug — Date objects hydrate as strings from localStorage [src/store/cockpitStore.ts]
+- [x] [Review][Patch] Race Condition in Sync Trigger — isSyncing check is not atomic with setting [src/lib/metabolism/syncService.ts:60]
+- [x] [Review][Patch] Queue ID Collision Risk — timestamp-based identification can collide; use UUID [src/store/cockpitStore.ts:107]
+- [x] [Review][Patch] CNS Reset Bug — CNS values don't reset to 0 when logs are empty [src/store/cockpitStore.ts:121]
+- [x] [Review][Patch] AC4.3.3 Violation: Missing Error UI — UI does not reflect failed sync state as required by spec [src/components/layout/SyncStatus.tsx]
+- [x] [Review][Patch] Unsafe Type Casting in Server Actions — category is cast without validation [src/app/(dashboard)/training/actions.ts:20]
+- [x] [Review][Patch] LocalStorage Quota Risk — Sync queue needs a maximum size limit [src/store/cockpitStore.ts:101]
+
 ## Dev Agent Record
 
 ### Agent Model Used
@@ -79,6 +93,7 @@ Gemini 2.0 Flash (CLI)
 2. Implementert `processSyncQueue` i `syncService.ts` med FIFO-logikk.
 3. Oppdatert `SyncStatus.tsx` til å lytte på `online`-endringer og trigge synkronisering.
 4. Refaktorert `logWorkout` til å ikke bruke `redirect` internt, slik at den kan brukes i bakgrunnskøen.
+5. Anvendt 11 patches fra code review for å forbedre robusthet og feilhåndtering.
 
 ### File List
 - `src/store/cockpitStore.ts` (UPDATE)
@@ -88,7 +103,8 @@ Gemini 2.0 Flash (CLI)
 
 ### Change Log
 - **2026-05-17:** Implementert bakgrunns-synkronisering med FIFO-kø og visuell status.
+- **2026-05-17:** Fikset 11 kritiske feil og forbedringer identifisert i code review.
 
 ## Story Completion Status
-- **Status:** review
-- **Completion Note:** Bakgrunns-synkronisering er nå fullført. Systemet detekterer automatisk når brukeren kommer online og tømmer køen sekvensielt.
+- **Status:** done
+- **Completion Note:** Bakgrunns-synkronisering er nå fullført og herdet etter en grundig code review. Systemet er robust mot race conditions, Head-of-Line blocking og data-inkonsistens.

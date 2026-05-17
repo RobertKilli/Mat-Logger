@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-16T05:00:00Z
-last_updated: 2026-05-17T12:40:00Z
+last_updated: 2026-05-18T10:00:00Z
 project: Mat-Logger
 project_key: NOKEY
 tracking_system: file-system
@@ -55,7 +55,6 @@ development_status:
   2-3-matbibliotek-&-søk: done
   2-4-fork-&-nudge-funksjonalitet: done
   2-5-daglig-totaloppsummering: done
-  epic-2-retrospective: optional
   epic-3: done
   3-1-treningslogging-ppl: done
   3-2-glykogen-debt-clock: done
@@ -66,6 +65,6 @@ development_status:
   epic-4: in-progress
   4-1-as-you-go-ui: done
   4-2-local-first-cockpit: done
-  4-3-bakgrunns-synkronisering: review
-  4-4-tilgjengelighetspolering-wcag: backlog
+  4-3-bakgrunns-synkronisering: done
+  4-4-tilgjengelighetspolering-wcag: ready-for-dev
   epic-4-retrospective: optional

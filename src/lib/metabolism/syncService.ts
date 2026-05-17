@@ -2,6 +2,8 @@ import { useCockpitStore } from '@/store/cockpitStore'
 import { logFoodEntry } from '@/app/(dashboard)/quick-log/actions'
 import { logWorkout } from '@/app/(dashboard)/training/actions'
 
+const MAX_QUEUE_SIZE = 50
+
 export async function executeLogAction(
   type: 'FOOD' | 'TRAINING',
   payload: Record<string, any>,
@@ -9,6 +11,7 @@ export async function executeLogAction(
 ) {
   const store = useCockpitStore.getState()
   const timestamp = new Date().toISOString()
+  const id = crypto.randomUUID()
 
   // 1. Optimistic Update (Store)
   if (type === 'FOOD') {
@@ -26,7 +29,10 @@ export async function executeLogAction(
 
   // 2. Network Check
   if (!isOnline) {
-    store.addToSyncQueue({ type, payload, timestamp })
+    if (store.pendingSyncQueue.length >= MAX_QUEUE_SIZE) {
+      return { error: 'Sync queue full. Please reconnect to sync data.' }
+    }
+    store.addToSyncQueue({ id, type, payload, timestamp })
     return { success: true, offline: true }
   }
 
@@ -44,24 +50,31 @@ export async function executeLogAction(
     }
 
     if (result?.error) {
-      store.addToSyncQueue({ type, payload, timestamp })
+      if (store.pendingSyncQueue.length >= MAX_QUEUE_SIZE) {
+        return { error: result.error }
+      }
+      store.addToSyncQueue({ id, type, payload, timestamp })
       return { error: result.error }
     }
 
     return { success: true }
   } catch {
-    store.addToSyncQueue({ type, payload, timestamp })
+    if (store.pendingSyncQueue.length >= MAX_QUEUE_SIZE) {
+      return { success: true, offline: true }
+    }
+    store.addToSyncQueue({ id, type, payload, timestamp })
     return { success: true, offline: true }
   }
 }
 
 export async function processSyncQueue() {
   const store = useCockpitStore.getState()
-  const { pendingSyncQueue, isSyncing, setIsSyncing, removeFromSyncQueue } = store
+  const { pendingSyncQueue, isSyncing, setIsSyncing, removeFromSyncQueue, setSyncError } = store
 
   if (pendingSyncQueue.length === 0 || isSyncing) return
 
   setIsSyncing(true)
+  setSyncError(null)
 
   try {
     // FIFO processing
@@ -82,15 +95,21 @@ export async function processSyncQueue() {
       }
 
       if (result?.success) {
-        removeFromSyncQueue(action.timestamp)
+        removeFromSyncQueue(action.id)
+      } else if (result?.status === 400) {
+        // Permanent validation error: remove from queue to avoid head-of-line blocking
+        console.error('Permanent sync failure (400) for item:', action.id, result?.error)
+        removeFromSyncQueue(action.id)
       } else {
-        // Stop on first error to preserve order
-        console.error('Sync failed for item:', action.timestamp, result?.error)
+        // Stop on first transient error to preserve order
+        console.error('Sync failed for item:', action.id, result?.error)
+        setSyncError(result?.error || 'Sync failed')
         break
       }
     }
   } catch (error) {
     console.error('Sync queue processing error:', error)
+    setSyncError('Internal sync error')
   } finally {
     setIsSyncing(false)
   }
