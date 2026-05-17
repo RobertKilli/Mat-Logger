@@ -62,9 +62,9 @@ development_status:
   3-4-treningshistorikk: done
   3-5-fysiologisk-feedback-loop: done
   epic-3-retrospective: optional
-  epic-4: in-progress
+  epic-4: done
   4-1-as-you-go-ui: done
   4-2-local-first-cockpit: done
   4-3-bakgrunns-synkronisering: done
-  4-4-tilgjengelighetspolering-wcag: ready-for-dev
+  4-4-tilgjengelighetspolering-wcag: done
   epic-4-retrospective: optional
