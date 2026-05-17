@@ -1,0 +1,71 @@
+# generated: 2026-05-16T05:00:00Z
+# last_updated: 2026-05-16T05:00:00Z
+# project: Mat-Logger
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: docs/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-05-16T05:00:00Z
+last_updated: 2026-05-17T12:40:00Z
+project: Mat-Logger
+project_key: NOKEY
+tracking_system: file-system
+story_location: docs/implementation-artifacts
+
+development_status:
+  epic-1: done
+  1-1-prosjektinitialisering: done
+  1-2-autentisering-via-supabase: done
+  1-3-fysiologisk-baseline: done
+  1-4-gdpr-verktøy-eksport-&-sletting: done
+  1-5-modellversjonering: done
+  epic-1-retrospective: optional
+  epic-2: done
+  2-1-gram-only-inntasting: done
+  2-2-sanntids-makro-kalkulator: done
+  2-3-matbibliotek-&-søk: done
+  2-4-fork-&-nudge-funksjonalitet: done
+  2-5-daglig-totaloppsummering: done
+  epic-2-retrospective: optional
+  epic-3: done
+  3-1-treningslogging-ppl: done
+  3-2-glykogen-debt-clock: done
+  3-3-cns-fatigue-indicator: done
+  3-4-treningshistorikk: done
+  3-5-fysiologisk-feedback-loop: done
+  epic-3-retrospective: optional
+  epic-4: in-progress
+  4-1-as-you-go-ui: done
+  4-2-local-first-cockpit: done
+  4-3-bakgrunns-synkronisering: review
+  4-4-tilgjengelighetspolering-wcag: backlog
+  epic-4-retrospective: optional

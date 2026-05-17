@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mat-Logger Visual Identity - High-Performance Dark</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'background': '#0A0A0B',
+                        'surface': '#141416',
+                        'primary': '#00FF41', // High-energy neon green
+                        'secondary': '#22C55E',
+                        'accent-blue': '#3B82F6', // Recovery
+                        'accent-orange': '#F59E0B', // Warning
+                        'accent-red': '#EF4444', // Alert
+                        'text-dim': '#A1A1AA',
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'sans-serif'],
+                        'mono': ['JetBrains Mono', 'monospace'],
+                    },
+                    spacing: {
+                        'unit': '8px',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0A0A0B; color: white; font-family: 'Inter', sans-serif; }
+        .cockpit-ring { border: 4px solid #141416; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; position: relative; }
+        .cockpit-ring::after { content: ''; position: absolute; inset: -4px; border: 4px solid #00FF41; border-radius: 50%; border-right-color: transparent; border-bottom-color: transparent; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-12">
+            <h1 class="text-4xl font-bold mb-2">Mat-Logger Visual Foundation</h1>
+            <p class="text-text-dim text-lg">High-Performance Dark Identity Visualizer</p>
+        </header>
+
+        <section class="mb-12">
+            <h2 class="text-xl font-semibold mb-6 border-b border-surface pb-2">1. Color System</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-background border border-surface p-4 rounded-lg">
+                    <div class="h-12 bg-primary rounded mb-2"></div>
+                    <p class="font-mono text-xs">PRIMARY (Action)</p>
+                    <p class="text-xs text-text-dim">#00FF41</p>
+                </div>
+                <div class="bg-background border border-surface p-4 rounded-lg">
+                    <div class="h-12 bg-accent-blue rounded mb-2"></div>
+                    <p class="font-mono text-xs">RECOVERY (Blue)</p>
+                    <p class="text-xs text-text-dim">#3B82F6</p>
+                </div>
+                <div class="bg-background border border-surface p-4 rounded-lg">
+                    <div class="h-12 bg-accent-orange rounded mb-2"></div>
+                    <p class="font-mono text-xs">WARNING (Glycogen)</p>
+                    <p class="text-xs text-text-dim">#F59E0B</p>
+                </div>
+                <div class="bg-background border border-surface p-4 rounded-lg">
+                    <div class="h-12 bg-accent-red rounded mb-2"></div>
+                    <p class="font-mono text-xs">ALERT (CNS)</p>
+                    <p class="text-xs text-text-dim">#EF4444</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-xl font-semibold mb-6 border-b border-surface pb-2">2. UI Context Preview (Cockpit)</h2>
+            <div class="bg-surface p-6 rounded-xl grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div class="flex gap-6 justify-center">
+                    <div class="flex flex-col items-center">
+                        <div class="cockpit-ring mb-2">
+                            <span class="font-mono text-xl font-bold">85<span class="text-xs">%</span></span>
+                        </div>
+                        <p class="text-[10px] font-mono text-text-dim uppercase tracking-widest">Glycogen</p>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="cockpit-ring !after:border-accent-red mb-2" style="--ring-color: #EF4444;">
+                             <span class="font-mono text-xl font-bold text-accent-red">HI</span>
+                        </div>
+                        <p class="text-[10px] font-mono text-text-dim uppercase tracking-widest">CNS Fatigue</p>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-background p-4 rounded-lg border border-surface">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-text-dim">Latest Entry</span>
+                            <span class="font-mono text-primary text-xs">+32g Carbs</span>
+                        </div>
+                        <p class="font-semibold">Oats, Steel Cut</p>
+                        <p class="text-xs text-text-dim">50g • 185 kcal</p>
+                    </div>
+                    <button class="w-full bg-primary text-background font-bold py-3 rounded-lg hover:brightness-90 transition-all">
+                        QUICK LOG FOOD
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-xl font-semibold mb-6 border-b border-surface pb-2">3. Typography</h2>
+            <div class="space-y-6">
+                <div>
+                    <p class="text-sm text-text-dim mb-2 uppercase tracking-widest">Main Display (Inter)</p>
+                    <p class="text-3xl font-bold">High Precision Metabolic Tracking</p>
+                </div>
+                <div>
+                    <p class="text-sm text-text-dim mb-2 uppercase tracking-widest">Technical Data (JetBrains Mono)</p>
+                    <p class="font-mono text-2xl text-primary">185.2g PROTEIN TARGET</p>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

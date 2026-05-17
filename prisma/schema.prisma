@@ -1,0 +1,92 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  weight        Float?
+  protein_goal  Int?     @default(0)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  food_logs     FoodLog[]
+  workout_logs  WorkoutLog[]
+
+  @@map("users")
+}
+
+model ModelVersion {
+  id           String   @id @default(uuid())
+  version_name String
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now())
+  food_logs    FoodLog[]
+  workout_logs WorkoutLog[]
+
+  @@map("model_versions")
+}
+
+model FoodItem {
+  id           String   @id @default(uuid())
+  user_id      String?  // Nullable for global items
+  name         String
+  protein_100g Float
+  carbs_100g   Float
+  fat_100g     Float
+  calories_100g Float
+  created_at   DateTime @default(now())
+  food_logs    FoodLog[]
+
+  user         User?    @relation(fields: [user_id], references: [id])
+
+  @@index([name])
+  @@map("food_items")
+}
+
+model FoodLog {
+  id               String   @id @default(uuid())
+  user_id          String
+  food_item_id     String
+  weight_grams     Float
+  model_version_id String
+  logged_at        DateTime @default(now())
+
+  user             User         @relation(fields: [user_id], references: [id])
+  food_item        FoodItem     @relation(fields: [food_item_id], references: [id])
+  model_version    ModelVersion @relation(fields: [model_version_id], references: [id])
+
+  @@map("food_logs")
+}
+
+enum TrainingCategory {
+  PUSH
+  PULL
+  LEGS
+}
+
+model WorkoutLog {
+  id                      String           @id @default(uuid())
+  user_id                 String
+  category                TrainingCategory
+  duration_minutes        Int
+  intensity               Int
+  predicted_fatigue_at_log Int?
+  subjective_fatigue      Int?
+  subjective_notes        String?
+  model_version_id        String
+  logged_at               DateTime         @default(now())
+
+  user                    User             @relation(fields: [user_id], references: [id])
+  model_version           ModelVersion     @relation(fields: [model_version_id], references: [id])
+
+  @@map("workout_logs")
+}
