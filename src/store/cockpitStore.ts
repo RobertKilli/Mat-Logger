@@ -18,6 +18,14 @@ interface PendingAction {
   timestamp: string
 }
 
+interface DailyFoodLog {
+  id: string
+  name: string
+  weight: number
+  calories: number
+  time: string
+}
+
 interface CockpitState {
   weight: number | null
   proteinGoal: number
@@ -25,6 +33,7 @@ interface CockpitState {
   dailyConsumedCarbs: number
   dailyConsumedFat: number
   dailyConsumedCalories: number
+  dailyFoodLogs: DailyFoodLog[]
   glycogenLevel: number // 0-100
   cnsFatigue: number // 0-100
   cnsRecoveryHours: number
@@ -39,6 +48,7 @@ interface CockpitState {
     carbs: number
     fat: number
     calories: number
+    recentLogs?: DailyFoodLog[]
   }) => void
   setWorkoutLogs: (logs: { intensity: number; logged_at: Date }[]) => void
   setPreview: (data: Partial<PreviewData> | null) => void
@@ -60,6 +70,7 @@ export const useCockpitStore = create<CockpitState>()(
       dailyConsumedCarbs: 0,
       dailyConsumedFat: 0,
       dailyConsumedCalories: 0,
+      dailyFoodLogs: [],
       glycogenLevel: 100,
       cnsFatigue: 0,
       cnsRecoveryHours: 0,
@@ -79,6 +90,7 @@ export const useCockpitStore = create<CockpitState>()(
           dailyConsumedCarbs: totals.carbs,
           dailyConsumedFat: totals.fat,
           dailyConsumedCalories: totals.calories,
+          dailyFoodLogs: totals.recentLogs ?? get().dailyFoodLogs,
         })
         get().updateMetabolicState()
       },
@@ -102,9 +114,12 @@ export const useCockpitStore = create<CockpitState>()(
         }
       },
       addToSyncQueue: (action) => {
-        set((state) => ({
-          pendingSyncQueue: [...state.pendingSyncQueue, action]
-        }))
+        set((state) => {
+          if (state.pendingSyncQueue.length >= 50) return state
+          return {
+            pendingSyncQueue: [...state.pendingSyncQueue, action]
+          }
+        })
       },
       removeFromSyncQueue: (id) => {
         set((state) => ({
@@ -145,6 +160,7 @@ export const useCockpitStore = create<CockpitState>()(
         dailyConsumedCarbs: state.dailyConsumedCarbs,
         dailyConsumedFat: state.dailyConsumedFat,
         dailyConsumedCalories: state.dailyConsumedCalories,
+        dailyFoodLogs: state.dailyFoodLogs,
         glycogenLevel: state.glycogenLevel,
         cnsFatigue: state.cnsFatigue,
         cnsRecoveryHours: state.cnsRecoveryHours,

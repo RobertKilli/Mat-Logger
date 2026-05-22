@@ -7,20 +7,20 @@ import { startOfDay, endOfDay } from 'date-fns'
 export async function getDailyTotals() {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { error: 'Unauthorized' }
-  }
-
   try {
-    // For MVP, we assume server time matches user time or handle offset later.
-    // Ideally, pass user timezone here.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { error: 'Unauthorized' }
+    }
+
     const now = new Date()
     const start = startOfDay(now)
     const end = endOfDay(now)
+
+    console.log(`[Cockpit] Fetching logs for user ${user.id} between ${start.toISOString()} and ${end.toISOString()}`)
 
     const logs = await prisma.foodLog.findMany({
       where: {
@@ -33,7 +33,12 @@ export async function getDailyTotals() {
       include: {
         food_item: true,
       },
+      orderBy: {
+        logged_at: 'desc'
+      }
     })
+
+    console.log(`[Cockpit] Found ${logs.length} logs for today.`)
 
     const totals = logs.reduce(
       (acc, log) => {
@@ -54,6 +59,13 @@ export async function getDailyTotals() {
         carbs: Number(totals.carbs.toFixed(1)),
         fat: Number(totals.fat.toFixed(1)),
         calories: Math.round(totals.calories),
+        recentLogs: logs.map(l => ({
+          id: l.id,
+          name: l.food_item.name,
+          weight: l.weight_grams,
+          calories: Math.round(l.food_item.calories_100g * (l.weight_grams / 100)),
+          time: l.logged_at.toISOString()
+        }))
       },
     }
   } catch (e) {

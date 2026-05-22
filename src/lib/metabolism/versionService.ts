@@ -11,19 +11,34 @@ export async function getActiveModelVersion(): Promise<string> {
     return activeVersionCache
   }
 
-  const activeVersion = await prisma.modelVersion.findFirst({
-    where: { is_active: true },
-    select: { id: true },
-    orderBy: { created_at: 'desc' },
-  })
+  try {
+    let activeVersion = await prisma.modelVersion.findFirst({
+      where: { is_active: true },
+      select: { id: true },
+      orderBy: { created_at: 'desc' },
+    })
 
-  if (!activeVersion) {
-    // Fallback if no active version is found, though seed should prevent this
+    // If no active version found, ensure the default exists and use it
+    if (!activeVersion) {
+      const defaultVersion = await prisma.modelVersion.upsert({
+        where: { id: 'v1.0-base' },
+        update: { is_active: true },
+        create: {
+          id: 'v1.0-base',
+          version_name: 'v1.0-base',
+          is_active: true,
+        },
+      })
+      activeVersion = { id: defaultVersion.id }
+    }
+
+    activeVersionCache = activeVersion.id
+    return activeVersionCache
+  } catch (error) {
+    console.error('Error fetching model version:', error)
+    // Absolute fallback - should be avoided by the logic above
     return 'v1.0-base'
   }
-
-  activeVersionCache = activeVersion.id
-  return activeVersionCache
 }
 
 /**

@@ -27,12 +27,30 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  const dbUser = await prisma.user.findUnique({
+  let dbUser = await prisma.user.findUnique({
     where: { id: user.id },
   })
 
+  // Ensure user record exists in our DB
+  if (!dbUser && user.email) {
+    dbUser = await prisma.user.create({
+      data: {
+        id: user.id,
+        email: user.email,
+        protein_goal: 0,
+      }
+    })
+  }
+
   const totalsResponse = await getDailyTotals()
-  const dailyTotals = totalsResponse.data || { protein: 0, carbs: 0, fat: 0, calories: 0 }
+  const dailyTotalsData = totalsResponse.data || { protein: 0, carbs: 0, fat: 0, calories: 0, recentLogs: [] }
+  const dailyTotals = {
+    protein: dailyTotalsData.protein,
+    carbs: dailyTotalsData.carbs,
+    fat: dailyTotalsData.fat,
+    calories: dailyTotalsData.calories,
+    recentLogs: dailyTotalsData.recentLogs || []
+  }
 
   // Fetch recent workouts for CNS calculation (last 7 days)
   const recentWorkouts: WorkoutSummary[] = await prisma.workoutLog.findMany({

@@ -27,9 +27,15 @@ export async function updateProfile(formData: FormData) {
   }
 
   try {
-    await prisma.user.update({
+    await prisma.user.upsert({
       where: { id: user.id },
-      data: {
+      create: {
+        id: user.id,
+        email: user.email!,
+        weight,
+        protein_goal: proteinGoal,
+      },
+      update: {
         weight,
         protein_goal: proteinGoal,
       },

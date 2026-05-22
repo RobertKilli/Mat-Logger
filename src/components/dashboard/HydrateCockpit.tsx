@@ -13,6 +13,7 @@ interface HydrateCockpitProps {
     carbs: number
     fat: number
     calories: number
+    recentLogs: { id: string; name: string; weight: number; calories: number; time: string }[]
   }
   recentWorkouts: { intensity: number; logged_at: Date }[]
 }

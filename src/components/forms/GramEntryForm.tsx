@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { calculateScaledMacros } from '@/lib/metabolism/macros'
 import { useCockpitStore } from '@/store/cockpitStore'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
@@ -10,6 +10,7 @@ interface GramEntryFormProps {
   foodItem: {
     id: string
     name: string
+    unit_weight?: number | null
     protein_100g: number
     carbs_100g: number
     fat_100g: number
@@ -19,25 +20,36 @@ interface GramEntryFormProps {
 }
 
 export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProps) {
-  const [grams, setGrams] = useState('')
+  const [inputValue, setInputValue] = useState('')
+  const [mode, setMode] = useState<'GRAMS' | 'QUANTITY'>(foodItem.unit_weight ? 'QUANTITY' : 'GRAMS')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const isOnline = useOnlineStatus()
-  const { proteinGoal, dailyConsumedProtein, setPreview } = useCockpitStore()
+  
+  const proteinGoal = useCockpitStore((state) => state.proteinGoal)
+  const dailyConsumedProtein = useCockpitStore((state) => state.dailyConsumedProtein)
+  const setPreview = useCockpitStore((state) => state.setPreview)
 
-  const numericGrams = parseFloat(grams) || 0
-  const scaled = calculateScaledMacros(numericGrams, {
+  const numericValue = parseFloat(inputValue) || 0
+  
+  const effectiveGrams = useMemo(() => {
+    if (mode === 'QUANTITY' && foodItem.unit_weight) {
+      return numericValue * foodItem.unit_weight
+    }
+    return numericValue
+  }, [mode, numericValue, foodItem.unit_weight])
+
+  const scaled = useMemo(() => calculateScaledMacros(effectiveGrams, {
     protein: foodItem.protein_100g,
     carbs: foodItem.carbs_100g,
     fat: foodItem.fat_100g,
     calories: foodItem.calories_100g,
-  })
+  }), [effectiveGrams, foodItem])
 
-  // Update store preview as-you-go
   useEffect(() => {
-    if (numericGrams > 0) {
+    if (effectiveGrams > 0) {
       setPreview({
         protein: scaled.protein,
         carbs: scaled.carbs,
@@ -47,9 +59,8 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
     } else {
       setPreview(null)
     }
-  }, [numericGrams, scaled, setPreview])
+  }, [effectiveGrams, scaled, setPreview])
 
-  // Clear preview on unmount
   useEffect(() => {
     return () => setPreview(null)
   }, [setPreview])
@@ -62,21 +73,20 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
     ? (dailyConsumedProtein / proteinGoal) * 100
     : 0
 
-  // Auto-focus on mount
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (numericGrams <= 0) return
+    if (effectiveGrams <= 0) return
 
     setIsSubmitting(true)
     setStatusMessage(null)
 
     const result = await executeLogAction('FOOD', {
       foodItemId: foodItem.id,
-      weightGrams: numericGrams,
+      weightGrams: effectiveGrams,
       ...scaled
     }, isOnline)
     
@@ -94,35 +104,61 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="text-center">
+      <div className="text-center space-y-2">
         <h2 className="font-mono text-sm uppercase tracking-widest text-zinc-500">
           Logging: {foodItem.name}
         </h2>
+        {foodItem.unit_weight && (
+          <div className="flex justify-center gap-2">
+             <button 
+              type="button"
+              onClick={() => setMode('GRAMS')}
+              className={`px-3 py-1 rounded-full font-mono text-[9px] font-bold border transition-all ${mode === 'GRAMS' ? 'bg-[#00FF41] text-black border-[#00FF41]' : 'text-zinc-600 border-zinc-800'}`}
+             >
+               GRAMS
+             </button>
+             <button 
+              type="button"
+              onClick={() => setMode('QUANTITY')}
+              className={`px-3 py-1 rounded-full font-mono text-[9px] font-bold border transition-all ${mode === 'QUANTITY' ? 'bg-[#00FF41] text-black border-[#00FF41]' : 'text-zinc-600 border-zinc-800'}`}
+             >
+               QUANTITY
+             </button>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
         <div className="relative">
-          <label htmlFor="grams-input" className="sr-only">Weight in grams</label>
+          <label htmlFor="log-input" className="sr-only">
+            {mode === 'GRAMS' ? 'Weight in grams' : 'Number of units'}
+          </label>
           <input
-            id="grams-input"
+            id="log-input"
             ref={inputRef}
             type="number"
             inputMode="decimal"
-            value={grams}
-            onChange={(e) => setGrams(e.target.value)}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             className="block w-full border-0 bg-transparent py-10 text-center font-mono text-7xl font-bold text-[#00FF41] placeholder-zinc-800 focus:ring-0 sm:text-8xl focus-visible:ring-2 focus-visible:ring-[#00FF41]/20 rounded-xl"
             placeholder="0"
             required
             aria-invalid={statusMessage?.type === 'error'}
             aria-describedby={statusMessage ? "form-status" : undefined}
           />
-          <span className="absolute bottom-2 left-1/2 -translate-x-1/2 font-mono text-sm font-bold text-zinc-600 uppercase" aria-hidden="true">
-            Grams
-          </span>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1" aria-hidden="true">
+            <span className="font-mono text-sm font-bold text-zinc-600 uppercase">
+              {mode === 'GRAMS' ? 'Grams' : 'Units'}
+            </span>
+            {mode === 'QUANTITY' && effectiveGrams > 0 && (
+              <span className="font-mono text-[10px] text-zinc-500 italic">
+                ≈ {Math.round(effectiveGrams)}g total
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Goal Impact Visualization */}
       {proteinGoal > 0 && (
         <div 
           className="space-y-3 rounded-xl bg-white/5 p-4 ring-1 ring-white/10"
@@ -186,7 +222,7 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
 
       <button
         type="submit"
-        disabled={isSubmitting || numericGrams <= 0}
+        disabled={isSubmitting || effectiveGrams <= 0}
         className="w-full rounded-xl bg-[#00FF41] py-5 text-xl font-bold text-black transition-all hover:bg-[#00FF41]/90 disabled:opacity-30 disabled:grayscale focus-visible:ring-4 focus-visible:ring-[#00FF41]/40 outline-none"
       >
         {isSubmitting ? 'TRANSMITTING...' : 'LOG ENTRY'}

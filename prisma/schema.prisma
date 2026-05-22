@@ -36,15 +36,29 @@ model ModelVersion {
   @@map("model_versions")
 }
 
+enum FoodCategory {
+  MEAT
+  FISH
+  FRUIT
+  VEGETABLE
+  DAIRY
+  GRAIN
+  SUPPLEMENT
+  OTHER
+}
+
 model FoodItem {
-  id            String    @id @default(uuid())
+  id            String       @id @default(uuid())
   user_id       String? // Nullable for global items
   name          String
+  category      FoodCategory @default(OTHER)
+  image_url     String?
+  unit_weight   Float? // Weight in grams for one unit (e.g. 60 for an egg)
   protein_100g  Float
   carbs_100g    Float
   fat_100g      Float
   calories_100g Float
-  created_at    DateTime  @default(now())
+  created_at    DateTime     @default(now())
   food_logs     FoodLog[]
 
   user User? @relation(fields: [user_id], references: [id])
@@ -91,3 +105,4 @@ model WorkoutLog {
 
   @@map("workout_logs")
 }
+
