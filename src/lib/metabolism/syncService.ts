@@ -1,6 +1,7 @@
 import { useCockpitStore } from '@/store/cockpitStore'
 import { logFoodEntry } from '@/app/(dashboard)/quick-log/actions'
 import { logWorkout } from '@/app/(dashboard)/training/actions'
+import { calculateNutrition } from '@/lib/metabolism/nutrition'
 
 const MAX_QUEUE_SIZE = 50
 
@@ -15,11 +16,12 @@ export async function executeLogAction(
 
   // 1. Optimistic Update (Store)
   if (type === 'FOOD') {
+    const calculated = calculateNutrition(payload.foodItem, payload.inputMode, payload.inputAmount)
     const newTotals = {
-      protein: store.dailyConsumedProtein + (payload.protein ?? 0),
-      carbs: store.dailyConsumedCarbs + (payload.carbs ?? 0),
-      fat: store.dailyConsumedFat + (payload.fat ?? 0),
-      calories: store.dailyConsumedCalories + (payload.calories ?? 0),
+      protein: store.dailyConsumedProtein + calculated.calculatedProtein,
+      carbs: store.dailyConsumedCarbs + calculated.calculatedCarbs,
+      fat: store.dailyConsumedFat + calculated.calculatedFat,
+      calories: store.dailyConsumedCalories + calculated.calculatedCalories,
     }
     store.setDailyTotals(newTotals)
   } else if (type === 'TRAINING') {
@@ -40,7 +42,13 @@ export async function executeLogAction(
   try {
     let result
     if (type === 'FOOD') {
-      result = await logFoodEntry(payload.foodItemId, payload.weightGrams)
+      result = await logFoodEntry(
+        payload.foodItem.id, 
+        payload.inputMode, 
+        payload.inputAmount,
+        payload.mealType,
+        payload.notes
+      )
     } else {
       const formData = new FormData()
       formData.append('category', payload.category)
@@ -85,7 +93,13 @@ export async function processSyncQueue() {
     for (const action of sortedQueue) {
       let result
       if (action.type === 'FOOD') {
-        result = await logFoodEntry(action.payload.foodItemId, action.payload.weightGrams)
+        result = await logFoodEntry(
+          action.payload.foodItem.id, 
+          action.payload.inputMode, 
+          action.payload.inputAmount,
+          action.payload.mealType,
+          action.payload.notes
+        )
       } else if (action.type === 'TRAINING') {
         const formData = new FormData()
         formData.append('category', action.payload.category)

@@ -31,56 +31,64 @@ function mapOFFCategory(categories: string[]): FoodCategory {
   return 'OTHER'
 }
 
+async function fetchOFF(query: string, baseUrl: string, signal: AbortSignal): Promise<ExternalFoodItem[]> {
+  // Construct search URL with optimized fields
+  const fields = 'code,product_name,product_name_no,brands,image_url,nutriments,categories_hierarchy,serving_quantity,product_quantity'
+  const url = `${baseUrl}/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20&fields=${fields}`
+  
+  const response = await fetch(url, {
+    signal,
+    headers: {
+      'User-Agent': 'Mat-Logger - Web - 1.0 (https://github.com/robert/mat-logger)'
+    }
+  })
+  
+  if (!response.ok) {
+    throw new Error(`OFF API error: ${response.status}`)
+  }
+  
+  const data = await response.json()
+  
+  return (data.products || []).map((p: any) => {
+    const nutriments = p.nutriments || {}
+    
+    // Heuristic for unit weight: check serving_quantity (often used for single items like eggs/bars)
+    let unitWeight = p.serving_quantity ? Number(p.serving_quantity) : undefined
+    
+    // Special case: if it's very large (e.g. a 500g pack), don't treat it as a single unit unless specifically noted
+    if (unitWeight && unitWeight > 250) unitWeight = undefined 
+
+    return {
+      id: `off-${p.code}`,
+      name: p.product_name_no || p.product_name || 'Ukjent produkt',
+      brand: p.brands,
+      image_url: p.image_url,
+      unit_weight: unitWeight,
+      protein_100g: Number(nutriments.proteins_100g || 0),
+      carbs_100g: Number(nutriments.carbohydrates_100g || 0),
+      fat_100g: Number(nutriments.fat_100g || 0),
+      calories_100g: Math.round(Number(nutriments['energy-kcal_100g'] || 0)),
+      category: mapOFFCategory(p.categories_hierarchy || []),
+      source: 'OFF' as const
+    }
+  })
+}
+
 export async function searchExternalFood(query: string, preferNorwegian: boolean = true): Promise<ExternalFoodItem[]> {
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s timeout
+  const timeoutId = setTimeout(() => controller.abort(), 8000) // Slightly longer timeout for fallback logic
 
   try {
-    const baseUrl = preferNorwegian ? 'https://no.openfoodfacts.org' : 'https://world.openfoodfacts.org'
+    // 1. Try preferred source
+    const primaryBaseUrl = preferNorwegian ? 'https://no.openfoodfacts.org' : 'https://world.openfoodfacts.org'
+    let results = await fetchOFF(query, primaryBaseUrl, controller.signal)
     
-    // We request serving_quantity and product_quantity to guess unit weight
-    const fields = 'code,product_name,product_name_no,brands,image_url,nutriments,categories_hierarchy,serving_quantity,product_quantity'
-    const url = `${baseUrl}/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20&fields=${fields}`
-    
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mat-Logger - Web - 1.0 (https://github.com/robert/mat-logger)'
-      }
-    })
-    
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      console.warn(`External API (OFF) responded with status: ${response.status} for query: ${query}`)
-      return []
+    // 2. If no results found and we preferred Norwegian, fallback to global search
+    if (results.length === 0 && preferNorwegian) {
+      results = await fetchOFF(query, 'https://world.openfoodfacts.org', controller.signal)
     }
     
-    const data = await response.json()
-    
-    return (data.products || []).map((p: any) => {
-      const nutriments = p.nutriments || {}
-      
-      // Heuristic for unit weight: check serving_quantity (often used for single items like eggs/bars)
-      let unitWeight = p.serving_quantity ? Number(p.serving_quantity) : undefined
-      
-      // Special case: if it's very large (e.g. a 500g pack), don't treat it as a single unit unless specifically noted
-      if (unitWeight && unitWeight > 250) unitWeight = undefined 
-
-      return {
-        id: `off-${p.code}`,
-        name: p.product_name_no || p.product_name || 'Ukjent produkt',
-        brand: p.brands,
-        image_url: p.image_url,
-        unit_weight: unitWeight,
-        protein_100g: Number(nutriments.proteins_100g || 0),
-        carbs_100g: Number(nutriments.carbohydrates_100g || 0),
-        fat_100g: Number(nutriments.fat_100g || 0),
-        calories_100g: Math.round(Number(nutriments['energy-kcal_100g'] || 0)),
-        category: mapOFFCategory(p.categories_hierarchy || []),
-        source: 'OFF' as const
-      }
-    })
+    return results
   } catch (error: any) {
     if (error.name === 'AbortError') {
       console.warn(`External search for "${query}" timed out.`)

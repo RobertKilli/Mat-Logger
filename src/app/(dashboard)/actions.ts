@@ -2,9 +2,9 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { startOfDay, endOfDay } from 'date-fns'
+import { startOfDay, endOfDay, parseISO } from 'date-fns'
 
-export async function getDailyTotals() {
+export async function getDailyTotals(dateStr?: string) {
   const supabase = await createClient()
 
   try {
@@ -16,11 +16,9 @@ export async function getDailyTotals() {
       return { error: 'Unauthorized' }
     }
 
-    const now = new Date()
-    const start = startOfDay(now)
-    const end = endOfDay(now)
-
-    console.log(`[Cockpit] Fetching logs for user ${user.id} between ${start.toISOString()} and ${end.toISOString()}`)
+    const targetDate = dateStr ? parseISO(dateStr) : new Date()
+    const start = startOfDay(targetDate)
+    const end = endOfDay(targetDate)
 
     const logs = await prisma.foodLog.findMany({
       where: {
@@ -34,20 +32,17 @@ export async function getDailyTotals() {
         food_item: true,
       },
       orderBy: {
-        logged_at: 'desc'
+        logged_at: 'asc'
       }
     })
 
-    console.log(`[Cockpit] Found ${logs.length} logs for today.`)
-
     const totals = logs.reduce(
       (acc, log) => {
-        const scale = log.weight_grams / 100
         return {
-          protein: acc.protein + log.food_item.protein_100g * scale,
-          carbs: acc.carbs + log.food_item.carbs_100g * scale,
-          fat: acc.fat + log.food_item.fat_100g * scale,
-          calories: acc.calories + log.food_item.calories_100g * scale,
+          protein: acc.protein + log.calculatedProtein,
+          carbs: acc.carbs + log.calculatedCarbs,
+          fat: acc.fat + log.calculatedFat,
+          calories: acc.calories + log.calculatedCalories,
         }
       },
       { protein: 0, carbs: 0, fat: 0, calories: 0 }
@@ -62,9 +57,12 @@ export async function getDailyTotals() {
         recentLogs: logs.map(l => ({
           id: l.id,
           name: l.food_item.name,
-          weight: l.weight_grams,
-          calories: Math.round(l.food_item.calories_100g * (l.weight_grams / 100)),
-          time: l.logged_at.toISOString()
+          weight: l.calculatedGrams,
+          calories: Math.round(l.calculatedCalories),
+          time: l.logged_at.toISOString(),
+          mealType: l.mealType,
+          inputMode: l.inputMode,
+          inputAmount: l.inputAmount
         }))
       },
     }

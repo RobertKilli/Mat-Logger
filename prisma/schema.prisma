@@ -47,19 +47,34 @@ enum FoodCategory {
   OTHER
 }
 
+enum BaseUnit {
+  GRAM
+  ML
+  UNIT
+}
+
 model FoodItem {
-  id            String       @id @default(uuid())
-  user_id       String? // Nullable for global items
-  name          String
-  category      FoodCategory @default(OTHER)
-  image_url     String?
-  unit_weight   Float? // Weight in grams for one unit (e.g. 60 for an egg)
-  protein_100g  Float
-  carbs_100g    Float
-  fat_100g      Float
-  calories_100g Float
-  created_at    DateTime     @default(now())
-  food_logs     FoodLog[]
+  id             String       @id @default(uuid())
+  user_id        String?      // Nullable for global items
+  name           String
+  brand          String?
+  category       FoodCategory @default(OTHER)
+  image_url      String?
+  
+  // New flexible logging fields
+  baseAmount     Float        @default(100)
+  baseUnit       BaseUnit     @default(GRAM)
+  gramsPerUnit   Float?       // Weight in grams for one unit (e.g. 60 for an egg)
+  
+  // Nutrients per baseAmount
+  protein        Float
+  carbs          Float
+  fat            Float
+  calories       Float
+  
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
+  food_logs      FoodLog[]
 
   user User? @relation(fields: [user_id], references: [id])
 
@@ -67,13 +82,41 @@ model FoodItem {
   @@map("food_items")
 }
 
+enum InputMode {
+  GRAMS
+  UNITS
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
 model FoodLog {
-  id               String   @id @default(uuid())
-  user_id          String
-  food_item_id     String
-  weight_grams     Float
-  model_version_id String
-  logged_at        DateTime @default(now())
+  id                 String    @id @default(uuid())
+  user_id            String
+  food_item_id       String
+  model_version_id   String
+  
+  // Logging inputs
+  inputMode          InputMode @default(GRAMS)
+  inputAmount        Float
+  
+  // Calculated actuals
+  calculatedGrams    Float
+  calculatedProtein  Float
+  calculatedCarbs    Float
+  calculatedFat      Float
+  calculatedCalories Float
+  
+  mealType           MealType?
+  notes              String?
+  
+  logged_at          DateTime  @default(now())
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
 
   user          User         @relation(fields: [user_id], references: [id])
   food_item     FoodItem     @relation(fields: [food_item_id], references: [id])
@@ -105,4 +148,3 @@ model WorkoutLog {
 
   @@map("workout_logs")
 }
-

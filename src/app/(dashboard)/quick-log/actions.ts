@@ -4,8 +4,16 @@ import { createClient } from '@/utils/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { MetabolicMotor } from '@/lib/metabolism'
 import { revalidatePath } from 'next/cache'
+import { calculateNutrition } from '@/lib/metabolism/nutrition'
+import { InputMode, MealType } from '@prisma/client'
 
-export async function logFoodEntry(foodItemId: string, grams: number) {
+export async function logFoodEntry(
+  foodItemId: string, 
+  inputMode: InputMode, 
+  inputAmount: number,
+  mealType?: MealType,
+  notes?: string
+) {
   const supabase = await createClient()
 
   try {
@@ -17,9 +25,19 @@ export async function logFoodEntry(foodItemId: string, grams: number) {
       return { error: 'Unauthorized' }
     }
 
-    if (grams <= 0) {
-      return { error: 'Grams must be positive' }
+    if (inputAmount <= 0) {
+      return { error: 'Amount must be positive' }
     }
+
+    const foodItem = await prisma.foodItem.findUnique({
+      where: { id: foodItemId }
+    })
+
+    if (!foodItem) {
+      return { error: 'Food item not found' }
+    }
+
+    const calculated = calculateNutrition(foodItem, inputMode, inputAmount)
 
     const { versionId } = await MetabolicMotor.getContext()
 
@@ -27,16 +45,24 @@ export async function logFoodEntry(foodItemId: string, grams: number) {
       data: {
         user_id: user.id,
         food_item_id: foodItemId,
-        weight_grams: grams,
         model_version_id: versionId,
+        inputMode,
+        inputAmount,
+        mealType,
+        notes,
+        calculatedGrams: calculated.calculatedGrams,
+        calculatedProtein: calculated.calculatedProtein,
+        calculatedCarbs: calculated.calculatedCarbs,
+        calculatedFat: calculated.calculatedFat,
+        calculatedCalories: calculated.calculatedCalories,
       },
     })
 
     revalidatePath('/')
     return { success: true }
-  } catch (e) {
+  } catch (e: any) {
     console.error('Error logging food:', e)
-    return { error: 'Failed to record entry' }
+    return { error: e.message || 'Failed to record entry' }
   }
 }
 

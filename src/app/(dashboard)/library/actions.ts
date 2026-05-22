@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { searchExternalFood } from '@/lib/metabolism/externalSearch'
-import { FoodCategory } from '@prisma/client'
+import { FoodCategory, BaseUnit } from '@prisma/client'
 
 export async function searchFoodItems(query: string, options: { preferNorwegian?: boolean, includeExternal?: boolean } = {}) {
   const supabase = await createClient()
@@ -58,13 +58,16 @@ export async function searchFoodItems(query: string, options: { preferNorwegian?
 
 export async function addFoodItem(data: {
   name: string
+  brand?: string
   category: FoodCategory
   image_url?: string
-  unit_weight?: number
-  protein_100g: number
-  carbs_100g: number
-  fat_100g: number
-  calories_100g: number
+  baseAmount: number
+  baseUnit: BaseUnit
+  gramsPerUnit?: number
+  protein: number
+  carbs: number
+  fat: number
+  calories: number
 }) {
   const supabase = await createClient()
 
@@ -96,9 +99,12 @@ export async function forkFoodItem(
   originalItemId: string,
   updates: {
     name: string
+    brand?: string
     category?: FoodCategory
     image_url?: string
-    unit_weight?: number
+    baseAmount?: number
+    baseUnit?: BaseUnit
+    gramsPerUnit?: number
     protein: number
     carbs: number
     fat: number
@@ -120,13 +126,16 @@ export async function forkFoodItem(
       data: {
         user_id: user.id,
         name: updates.name,
+        brand: updates.brand,
         category: updates.category ?? 'OTHER',
         image_url: updates.image_url,
-        unit_weight: updates.unit_weight,
-        protein_100g: updates.protein,
-        carbs_100g: updates.carbs,
-        fat_100g: updates.fat,
-        calories_100g: updates.calories,
+        baseAmount: updates.baseAmount ?? 100,
+        baseUnit: updates.baseUnit ?? 'GRAM',
+        gramsPerUnit: updates.gramsPerUnit,
+        protein: updates.protein,
+        carbs: updates.carbs,
+        fat: updates.fat,
+        calories: updates.calories,
       },
     })
 

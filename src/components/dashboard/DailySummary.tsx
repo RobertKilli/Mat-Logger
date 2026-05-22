@@ -2,33 +2,47 @@
 
 import { useCockpitStore } from '@/store/cockpitStore'
 
-export default function DailySummary() {
-  const { 
-    proteinGoal, 
-    dailyConsumedProtein,
-    dailyConsumedCarbs,
-    dailyConsumedFat,
-    dailyConsumedCalories
-  } = useCockpitStore()
+interface DailySummaryProps {
+  serverData?: {
+    protein: number
+    carbs: number
+    fat: number
+    calories: number
+  }
+  isHistorical?: boolean
+}
+
+export default function DailySummary({ serverData, isHistorical }: DailySummaryProps) {
+  const store = useCockpitStore()
+
+  // Prioritize server data if it's a historical date, otherwise use live store state
+  const data = isHistorical && serverData ? serverData : {
+    protein: store.dailyConsumedProtein,
+    carbs: store.dailyConsumedCarbs,
+    fat: store.dailyConsumedFat,
+    calories: store.dailyConsumedCalories
+  }
+
+  const proteinGoal = isHistorical ? 0 : store.proteinGoal
 
   const macros = [
     { 
       label: 'Protein', 
-      current: dailyConsumedProtein, 
+      current: data.protein, 
       target: proteinGoal, 
       color: 'bg-[#00FF41]', 
       unit: 'g' 
     },
     { 
-      label: 'Carbs', 
-      current: dailyConsumedCarbs, 
-      target: 0, // No specific target yet in baseline
+      label: 'Karbs', 
+      current: data.carbs, 
+      target: 0, 
       color: 'bg-zinc-400', 
       unit: 'g' 
     },
     { 
-      label: 'Fat', 
-      current: dailyConsumedFat, 
+      label: 'Fett', 
+      current: data.fat, 
       target: 0, 
       color: 'bg-zinc-400', 
       unit: 'g' 
@@ -39,17 +53,18 @@ export default function DailySummary() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
         <div className="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10">
-          <p className="font-mono text-[10px] uppercase text-zinc-500">Daily Calories</p>
+          <p className="font-mono text-[10px] uppercase text-zinc-500">Daglig Inntak</p>
           <p className="font-mono text-3xl font-bold text-[#00FF41]">
-            {dailyConsumedCalories} <span className="text-sm font-normal text-zinc-600">kcal</span>
+            {Math.round(data.calories)} <span className="text-sm font-normal text-zinc-600">kcal</span>
           </p>
         </div>
         
-        {/* Quick status card */}
         <div className="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10 flex items-center justify-center">
           <div className="text-center">
-             <p className="font-mono text-[10px] uppercase text-zinc-500 underline decoration-[#00FF41]">System Status</p>
-             <p className="font-mono text-xs font-bold text-white mt-1">OPERATIONAL</p>
+             <p className="font-mono text-[10px] uppercase text-zinc-500 underline decoration-[#00FF41]">Status</p>
+             <p className="font-mono text-xs font-bold text-white mt-1">
+               {isHistorical ? 'HISTORISK' : 'OPERASJONELL'}
+             </p>
           </div>
         </div>
       </div>
@@ -73,7 +88,7 @@ export default function DailySummary() {
               ) : (
                 <div 
                   className="h-full bg-zinc-700"
-                  style={{ width: '10%' }} // Indicator that it's being tracked but no target
+                  style={{ width: macro.current > 0 ? '100%' : '0%' }}
                 />
               )}
             </div>

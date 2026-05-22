@@ -26,21 +26,32 @@ export default function FoodSearch() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<{ internal: FoodItem[], external: FoodItem[] }>({ internal: [], external: [] })
   const [isLoading, setIsLoading] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
   const [preferNorwegian, setPreferNorwegian] = useState(true)
   const [forkItem, setForkItem] = useState<FoodItem | null>(null)
   const [isAddingNew, setIsAddingNew] = useState(false)
 
   useEffect(() => {
+    setSearchError(null)
     const delayDebounceFn = setTimeout(async () => {
       if (query.length >= 2) {
         setIsLoading(true)
-        const result = await searchFoodItems(query, { preferNorwegian, includeExternal: true })
-        if (result.data) {
-          setResults(result.data as any)
+        try {
+          const result = await searchFoodItems(query, { preferNorwegian, includeExternal: true })
+          if (result.error) {
+            setSearchError(result.error)
+            setResults({ internal: [], external: [] })
+          } else if (result.data) {
+            setResults(result.data as any)
+          }
+        } catch (e) {
+          setSearchError('Klarte ikke å koble til søketjenesten')
+        } finally {
+          setIsLoading(false)
         }
-        setIsLoading(false)
       } else {
         setResults({ internal: [], external: [] })
+        setIsLoading(false)
       }
     }, 300)
 
@@ -66,8 +77,12 @@ export default function FoodSearch() {
 
   async function handleDelete(id: string) {
     if (confirm('Er du sikker på at du vil slette denne matvaren permanent fra ditt bibliotek?')) {
-      await deleteFoodItem(id)
-      setQuery('') // Trigger refresh
+      const result = await deleteFoodItem(id)
+      if (result.success) {
+        setQuery('') // Trigger refresh
+      } else {
+        alert(result.error)
+      }
     }
   }
 
@@ -122,6 +137,12 @@ export default function FoodSearch() {
       </div>
 
       <div className="space-y-6" aria-live="polite">
+        {searchError && (
+          <div className="py-10 text-center font-mono text-xs text-red-500 uppercase">
+            ⚠️ {searchError}
+          </div>
+        )}
+
         {/* Internal Results */}
         {results.internal.length > 0 && (
           <div className="space-y-2">
@@ -153,7 +174,7 @@ export default function FoodSearch() {
           </div>
         )}
 
-        {query.length >= 2 && !hasResults && !isLoading && (
+        {query.length >= 2 && !hasResults && !isLoading && !searchError && (
           <div className="py-10 text-center font-mono text-xs text-zinc-600 uppercase">
             Ingen treff i databasen eller på nett
           </div>
@@ -230,12 +251,14 @@ function FoodItemRow({
       
       <Link href={`/quick-log?item=${item.id}`} className="flex-1 outline-none">
         <div className="flex flex-col">
-          <h3 className="font-bold text-white group-hover:text-[#00FF41] leading-tight">
-            {item.name.toUpperCase()}
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-white group-hover:text-[#00FF41] leading-tight">
+              {item.name.toUpperCase()}
+            </h3>
             {item.user_id && isInternal && (
-              <span className="ml-2 rounded bg-[#00FF41]/10 px-1.5 py-0.5 font-mono text-[8px] text-[#00FF41]">PERSONAL</span>
+              <span className="rounded bg-[#00FF41]/10 px-1.5 py-0.5 font-mono text-[8px] text-[#00FF41]">PERSONAL</span>
             )}
-          </h3>
+          </div>
           {item.brand && <span className="text-[9px] font-mono text-zinc-500 uppercase">{item.brand}</span>}
           <div className="mt-1 flex gap-3 font-mono text-[9px] text-zinc-500 uppercase tracking-tighter">
             <span>P: {item.protein_100g}</span>

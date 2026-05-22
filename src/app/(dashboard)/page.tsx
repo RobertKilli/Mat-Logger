@@ -1,93 +1,90 @@
-'use client'
-
+import { createClient } from '@/utils/supabase/server'
 import DailySummary from '@/components/dashboard/DailySummary'
 import GlycogenClock from '@/components/dashboard/GlycogenClock'
 import CNSMeter from '@/components/dashboard/CNSMeter'
-import FeedbackLoop from '@/components/forms/FeedbackLoop'
+import DailyLogList from '@/components/dashboard/DailyLogList'
 import Link from 'next/link'
-import { useCockpitStore } from '@/store/cockpitStore'
-import { format } from 'date-fns'
-import { deleteFoodLog } from './quick-log/actions'
-import { useState } from 'react'
+import { getDailyTotals } from './actions'
+import { format, addDays, subDays, isToday, parseISO } from 'date-fns'
+import { nb } from 'date-fns/locale'
 
-export default function DashboardPage() {
-  const { dailyFoodLogs, recentWorkoutLogs } = useCockpitStore()
-  const [isDeleting, setIsDeleting] = useState<string | null>(null)
+interface DashboardPageProps {
+  searchParams: Promise<{ date?: string }>
+}
 
-  async function handleDeleteLog(id: string) {
-    setIsDeleting(id)
-    const result = await deleteFoodLog(id)
-    if (result.success) {
-      // Local update via refresh or store (server action triggers revalidate)
-    }
-    setIsDeleting(null)
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return null
   }
 
-  // Find the most recent workout that hasn't been rated yet (subjective fatigue is null)
-  // Note: We'd need to extend workoutLog in store to track feedback status
-  const pendingFeedback = null // Placeholder for now
+  const { date } = await searchParams
+  const currentDate = date ? parseISO(date) : new Date()
+  
+  const prevDate = format(subDays(currentDate, 1), 'yyyy-MM-dd')
+  const nextDate = format(addDays(currentDate, 1), 'yyyy-MM-dd')
+  const isCurrentToday = isToday(currentDate)
+  
+  const displayDate = isCurrentToday 
+    ? 'I DAG' 
+    : format(currentDate, 'd. MMMM yyyy', { locale: nb }).toUpperCase()
+
+  const totalsResponse = await getDailyTotals(date)
+  const dailyData = totalsResponse.data || { protein: 0, carbs: 0, fat: 0, calories: 0, recentLogs: [] }
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-8 p-6 sm:p-12">
+      
+      {/* Date Navigation */}
+      <div className="flex items-center justify-between rounded-2xl bg-[#141416] p-4 ring-1 ring-white/10 shadow-lg">
+        <Link 
+          href={`/?date=${prevDate}`}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+        >
+          <span className="sr-only">Forrige dag</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </Link>
+        
+        <div className="text-center">
+          <h2 className="font-mono text-lg font-bold text-[#00FF41] tracking-widest">{displayDate}</h2>
+        </div>
+
+        <Link 
+          href={isCurrentToday ? '#' : `/?date=${nextDate}`}
+          className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${isCurrentToday ? 'opacity-30 cursor-not-allowed' : 'bg-white/5 hover:bg-white/10'}`}
+          aria-disabled={isCurrentToday}
+        >
+          <span className="sr-only">Neste dag</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </Link>
+      </div>
+
       <section className="grid gap-8 md:grid-cols-2">
-        {/* Main indicators */}
         <div className="space-y-4">
-           <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest">Klarhets-indikatorer</h2>
-           <div className="grid grid-cols-2 gap-4">
+          <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest">Klarhets-indikatorer</h2>
+          <div className="grid grid-cols-2 gap-4">
               <GlycogenClock />
               <CNSMeter />
-           </div>
+          </div>
         </div>
 
         <div className="space-y-4">
-           <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest">Ernæringsstatus</h2>
-           <div className="rounded-2xl bg-[#141416] p-6 ring-1 ring-white/10 shadow-lg">
-              <DailySummary />
-           </div>
+          <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest">Ernæringsstatus</h2>
+          <div className="rounded-2xl bg-[#141416] p-6 ring-1 ring-white/10 shadow-lg h-full">
+              <DailySummary serverData={dailyData} isHistorical={!isCurrentToday} />
+          </div>
         </div>
       </section>
 
       {/* Operation Log */}
       <section className="space-y-4">
-        <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest">Dagens operasjoner</h2>
-        <div className="rounded-2xl bg-[#141416] overflow-hidden ring-1 ring-white/10 shadow-lg">
-          {dailyFoodLogs.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="mx-auto h-8 w-8 rounded-full border border-dashed border-zinc-700 flex items-center justify-center mb-3">
-                 <div className="h-1 w-1 rounded-full bg-zinc-700" />
-              </div>
-              <p className="font-mono text-[10px] text-zinc-600 uppercase tracking-tighter">
-                Ingen aktive operasjoner registrert i cockpit
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-white/5">
-              {dailyFoodLogs.map((log) => (
-                <div key={log.id} className="flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors group">
-                  <div className="flex flex-col">
-                    <span className="font-bold text-sm text-zinc-200">{log.name.toUpperCase()}</span>
-                    <span className="font-mono text-[9px] text-zinc-500 uppercase">
-                      {format(new Date(log.time), 'HH:mm')} • {log.weight}G
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <span className="font-mono text-xs font-bold text-[#00FF41]">+{log.calories} KCAL</span>
-                    </div>
-                    <button 
-                      onClick={() => handleDeleteLog(log.id)}
-                      disabled={isDeleting === log.id}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-zinc-600 hover:text-red-500 disabled:opacity-50"
-                      aria-label="Slett loggføring"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest">Dagbok for {displayDate}</h2>
+        <DailyLogList logs={dailyData.recentLogs} isHistorical={!isCurrentToday} />
       </section>
 
       <section className="pt-8 border-t border-white/5 flex flex-wrap gap-4">
