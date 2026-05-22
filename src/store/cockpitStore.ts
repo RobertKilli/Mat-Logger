@@ -34,6 +34,7 @@ interface CockpitState {
   dailyConsumedFat: number
   dailyConsumedCalories: number
   dailyFoodLogs: DailyFoodLog[]
+  recentWorkoutLogs: { intensity: number; logged_at: Date }[]
   glycogenLevel: number // 0-100
   cnsFatigue: number // 0-100
   cnsRecoveryHours: number
@@ -71,6 +72,7 @@ export const useCockpitStore = create<CockpitState>()(
       dailyConsumedFat: 0,
       dailyConsumedCalories: 0,
       dailyFoodLogs: [],
+      recentWorkoutLogs: [],
       glycogenLevel: 100,
       cnsFatigue: 0,
       cnsRecoveryHours: 0,
@@ -78,7 +80,6 @@ export const useCockpitStore = create<CockpitState>()(
       pendingSyncQueue: [],
       isSyncing: false,
       syncError: null,
-      recentWorkoutLogs: [] as { intensity: number; logged_at: Date }[],
       
       setBaseline: (weight, proteinGoal) => {
         set({ weight, proteinGoal })
@@ -140,7 +141,7 @@ export const useCockpitStore = create<CockpitState>()(
         }
 
         // 2. CNS Update
-        if (recentWorkoutLogs.length > 0) {
+        if (recentWorkoutLogs && recentWorkoutLogs.length > 0) {
           const cns = calculateCNSFatigue(recentWorkoutLogs)
           set({ cnsFatigue: cns.percentage, cnsRecoveryHours: cns.recoveryTimeHours })
         } else {

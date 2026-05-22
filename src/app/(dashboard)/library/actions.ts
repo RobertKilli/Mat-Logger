@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { searchExternalFood } from '@/lib/metabolism/externalSearch'
+import { searchExternalFood, fetchExternalProduct } from '@/lib/metabolism/externalSearch'
 import { FoodCategory, BaseUnit } from '@prisma/client'
 import { startOfDay, format, subDays } from 'date-fns'
 
@@ -184,14 +184,20 @@ export async function searchFoodItems(query: string, options: { preferNorwegian?
     // 1. Search internal DB
     const internalItems = await prisma.foodItem.findMany({
       where: {
-        OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { barcode: query }
-        ],
-        OR: [
-          { user_id: null }, 
-          { user_id: authUser.id },
-        ],
+        AND: [
+          {
+            OR: [
+              { name: { contains: query, mode: 'insensitive' } },
+              { barcode: query }
+            ]
+          },
+          {
+            OR: [
+              { user_id: null }, 
+              { user_id: authUser.id },
+            ]
+          }
+        ]
       },
       orderBy: [{ user_id: 'desc' }, { name: 'asc' }],
     })

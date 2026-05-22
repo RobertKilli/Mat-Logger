@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import ProfileForm from '@/components/forms/ProfileForm'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import GarminConnect from './GarminConnect'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -21,8 +22,8 @@ export default async function ProfilePage() {
 
   return (
     <div className="p-4 sm:p-8">
-      <div className="mx-auto max-w-2xl">
-        <header className="mb-8 flex items-center gap-4">
+      <div className="mx-auto max-w-2xl space-y-12">
+        <header className="flex items-center gap-4">
           <Link 
             href="/" 
             className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors ring-1 ring-white/10"
@@ -38,14 +39,22 @@ export default async function ProfilePage() {
           </div>
         </header>
 
-        <div className="rounded-2xl bg-[#141416] p-6 shadow-2xl ring-1 ring-white/10 sm:p-8">
-          <ProfileForm
-            initialData={{
-              weight: dbUser?.weight ?? null,
-              proteinGoal: dbUser?.protein_goal ?? 0,
-            }}
-          />
-        </div>
+        <section className="space-y-4">
+          <h2 className="font-mono text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] ml-1">Fysiologisk Konfigurasjon</h2>
+          <div className="rounded-2xl bg-[#141416] p-6 shadow-2xl ring-1 ring-white/10 sm:p-8">
+            <ProfileForm
+              initialData={{
+                weight: dbUser?.weight ?? null,
+                proteinGoal: dbUser?.protein_goal ?? 0,
+              }}
+            />
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="font-mono text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] ml-1">Integrasjoner</h2>
+          <GarminConnect />
+        </section>
       </div>
     </div>
   )

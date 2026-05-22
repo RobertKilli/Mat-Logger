@@ -96,7 +96,7 @@ export default async function LibraryPage() {
                       </div>
                       <div className="overflow-hidden">
                         <p className="truncate font-bold text-sm text-zinc-300 group-hover:text-[#00FF41]">{item.name.toUpperCase()}</p>
-                        <p className="font-mono text-[9px] text-zinc-500">{Math.round(item.calories)} kcal / {item.baseAmount}{item.baseUnit === 'GRAM' ? 'g' : item.baseUnit === 'ML' ? 'ml' : 'stk'}</p>
+                        <p className="font-mono text-[9px] text-zinc-500">{Math.round(item.caloriesPer100g)} kcal / {item.baseAmount}{item.baseUnit === 'GRAM' ? 'g' : item.baseUnit === 'ML' ? 'ml' : 'stk'}</p>
                       </div>
                     </Link>
                   ))}

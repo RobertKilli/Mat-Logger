@@ -3,10 +3,15 @@ import DailySummary from '@/components/dashboard/DailySummary'
 import GlycogenClock from '@/components/dashboard/GlycogenClock'
 import CNSMeter from '@/components/dashboard/CNSMeter'
 import DailyLogList from '@/components/dashboard/DailyLogList'
+import BiometricTelemetry from '@/components/dashboard/BiometricTelemetry'
+import MissionCommandCenter from '@/components/dashboard/MissionCommandCenter'
 import Link from 'next/link'
 import { getDailyTotals } from './actions'
+import { getLatestBiometrics } from './profile/garminActions'
+import { generateGuidance } from '@/lib/metabolism/guidance'
 import { format, addDays, subDays, isToday, parseISO } from 'date-fns'
 import { nb } from 'date-fns/locale'
+import { prisma } from '@/lib/prisma'
 
 interface DashboardPageProps {
   searchParams: Promise<{ date?: string }>
@@ -26,16 +31,32 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const { date } = await searchParams
   const currentDate = date ? parseISO(date) : new Date()
   
-  const prevDate = format(subDays(currentDate, 1), 'yyyy-MM-dd')
-  const nextDate = format(addDays(currentDate, 1), 'yyyy-MM-dd')
   const isCurrentToday = isToday(currentDate)
-  
   const displayDate = isCurrentToday 
     ? 'I DAG' 
     : format(currentDate, 'd. MMMM yyyy', { locale: nb }).toUpperCase()
 
-  const totalsResponse = await getDailyTotals(date)
+  // 1. Fetch all operational data
+  const [totalsResponse, biometricsResponse, recentWorkouts] = await Promise.all([
+    getDailyTotals(date),
+    getLatestBiometrics(),
+    prisma.workoutLog.findMany({
+        where: { user_id: user.id, logged_at: { gte: subDays(new Date(), 7) } },
+        select: { intensity: true, logged_at: true }
+    })
+  ])
+
   const dailyData = totalsResponse.data || { protein: 0, carbs: 0, fat: 0, calories: 0, recentLogs: [] }
+  
+  // 2. Generate AI Guidance (Mission Briefing)
+  const briefing = generateGuidance(
+    biometricsResponse.data || [],
+    { ...dailyData, goal: dailyData.proteinGoal || 0 },
+    recentWorkouts
+  )
+
+  const prevDate = format(subDays(currentDate, 1), 'yyyy-MM-dd')
+  const nextDate = format(addDays(currentDate, 1), 'yyyy-MM-dd')
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-8 p-6 sm:p-12">
@@ -64,6 +85,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </Link>
       </div>
 
+      {/* AI Mission Command Center */}
+      {isCurrentToday && (
+        <MissionCommandCenter briefing={briefing} />
+      )}
+
       <section className="grid gap-8 md:grid-cols-2">
         <div className="space-y-4">
           <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest">Klarhets-indikatorer</h2>
@@ -71,6 +97,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               <GlycogenClock />
               <CNSMeter />
           </div>
+          
+          <BiometricTelemetry />
         </div>
 
         <div className="space-y-4">

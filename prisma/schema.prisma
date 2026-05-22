@@ -19,6 +19,8 @@ enum SubscriptionTier {
 model User {
   id                String           @id @default(uuid())
   email             String           @unique
+  display_name      String?          @default("Pilot")
+  theme_color       String?          @default("#00FF41")
   weight            Float?
   protein_goal      Int?             @default(0)
   subscription_tier SubscriptionTier @default(FREE)
@@ -65,7 +67,6 @@ model BiometricLog {
   @@index([user_id, type, logged_at])
   @@map("biometric_logs")
 }
-...
 
 model ModelVersion {
   id           String       @id @default(uuid())

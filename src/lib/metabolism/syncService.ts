@@ -110,12 +110,8 @@ export async function processSyncQueue() {
 
       if (result?.success) {
         removeFromSyncQueue(action.id)
-      } else if (result?.status === 400) {
-        // Permanent validation error: remove from queue to avoid head-of-line blocking
-        console.error('Permanent sync failure (400) for item:', action.id, result?.error)
-        removeFromSyncQueue(action.id)
       } else {
-        // Stop on first transient error to preserve order
+        // Stop on first error to preserve order
         console.error('Sync failed for item:', action.id, result?.error)
         setSyncError(result?.error || 'Sync failed')
         break
