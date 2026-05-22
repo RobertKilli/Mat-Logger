@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import GramEntryForm from '@/components/forms/GramEntryForm'
 import { prisma } from '@/lib/prisma'
+import { fetchExternalProduct } from '@/lib/metabolism/externalSearch'
 
 export default async function QuickLogPage({
   searchParams,
@@ -21,25 +22,29 @@ export default async function QuickLogPage({
   const { item: itemId } = await searchParams
 
   if (!itemId) {
-    const firstItem = await prisma.foodItem.findFirst()
-    
-    if (!firstItem) {
-      return (
-        <div className="flex items-center justify-center p-12 text-zinc-500">
-          <p>No food items found in cockpit database. Please seed library first.</p>
-        </div>
-      )
-    }
-
-    redirect(`/quick-log?item=${firstItem.id}`)
+    redirect('/library')
   }
 
-  const foodItem = await prisma.foodItem.findUnique({
-    where: { id: itemId as string },
-  })
+  let foodItem: any = null
+
+  if (typeof itemId === 'string' && itemId.startsWith('off-')) {
+    // Fetch from Open Food Facts
+    const code = itemId.replace('off-', '')
+    foodItem = await fetchExternalProduct(code)
+  } else {
+    // Fetch from local DB
+    foodItem = await prisma.foodItem.findUnique({
+      where: { id: itemId as string },
+    })
+  }
 
   if (!foodItem) {
-    return <div className="p-12 text-center">Item not found</div>
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-zinc-500">
+        <p>Matvaren ble ikke funnet i databasen eller på nett.</p>
+        <Link href="/library" className="mt-4 text-[#00FF41] underline">Tilbake til biblioteket</Link>
+      </div>
+    )
   }
 
   return (

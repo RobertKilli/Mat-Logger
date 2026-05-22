@@ -13,10 +13,10 @@ interface FoodItem {
   category: string
   image_url?: string | null
   unit_weight?: number | null
-  protein_100g: number
-  carbs_100g: number
-  fat_100g: number
-  calories_100g: number
+  protein: number
+  carbs: number
+  fat: number
+  calories: number
   user_id?: string | null
   brand?: string
   source?: 'OFF'
@@ -42,7 +42,15 @@ export default function FoodSearch() {
             setSearchError(result.error)
             setResults({ internal: [], external: [] })
           } else if (result.data) {
-            setResults(result.data as any)
+            // Map internal DB properties to match interface
+            const internal = (result.data.internal || []).map((item: any) => ({
+              ...item,
+              protein: item.protein,
+              carbs: item.carbs,
+              fat: item.fat,
+              calories: item.calories
+            }))
+            setResults({ internal, external: result.data.external || [] })
           }
         } catch (e) {
           setSearchError('Klarte ikke å koble til søketjenesten')
@@ -64,10 +72,10 @@ export default function FoodSearch() {
       category: item.category as any,
       image_url: item.image_url || undefined,
       unit_weight: item.unit_weight || undefined,
-      protein: item.protein_100g,
-      carbs: item.carbs_100g,
-      fat: item.fat_100g,
-      calories: item.calories_100g
+      protein: item.protein,
+      carbs: item.carbs,
+      fat: item.fat,
+      calories: item.calories
     })
 
     if (result.data) {
@@ -261,10 +269,10 @@ function FoodItemRow({
           </div>
           {item.brand && <span className="text-[9px] font-mono text-zinc-500 uppercase">{item.brand}</span>}
           <div className="mt-1 flex gap-3 font-mono text-[9px] text-zinc-500 uppercase tracking-tighter">
-            <span>P: {item.protein_100g}</span>
-            <span>C: {item.carbs_100g}</span>
-            <span>F: {item.fat_100g}</span>
-            <span className="text-zinc-400">{item.calories_100g} kcal</span>
+            <span>P: {item.protein}</span>
+            <span>C: {item.carbs}</span>
+            <span>F: {item.fat}</span>
+            <span className="text-zinc-400">{item.calories} kcal</span>
           </div>
           {item.unit_weight && (
             <span className="text-[8px] font-mono text-[#00FF41]/60 uppercase mt-0.5">Stykkvekt: {item.unit_weight}g</span>

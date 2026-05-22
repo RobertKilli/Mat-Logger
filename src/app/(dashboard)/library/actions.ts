@@ -56,6 +56,26 @@ export async function searchFoodItems(query: string, options: { preferNorwegian?
   }
 }
 
+export async function lookupExternalFood(name: string) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: 'Unauthorized' }
+  }
+
+  try {
+    const results = await searchExternalFood(name, true)
+    return { data: results }
+  } catch (e) {
+    console.error('External lookup error:', e)
+    return { error: 'External lookup failed' }
+  }
+}
+
 export async function addFoodItem(data: {
   name: string
   brand?: string

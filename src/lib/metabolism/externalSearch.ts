@@ -1,4 +1,4 @@
-import { FoodCategory } from '@prisma/client'
+import { FoodCategory, BaseUnit } from '@prisma/client'
 
 export interface ExternalFoodItem {
   id: string
@@ -6,17 +6,51 @@ export interface ExternalFoodItem {
   brand?: string
   image_url?: string
   unit_weight?: number
-  protein_100g: number
-  carbs_100g: number
-  fat_100g: number
-  calories_100g: number
+  baseAmount: number
+  baseUnit: BaseUnit
+  protein: number
+  carbs: number
+  fat: number
+  calories: number
   category: FoodCategory
   source: 'OFF' // Open Food Facts
 }
 
 /**
- * Maps Open Food Facts categories to our internal enum
+ * Heuristic to extract unit weight from various OFF fields
  */
+function detectUnitWeight(p: any): number | undefined {
+  // 1. Try explicit serving_quantity
+  if (p.serving_quantity) {
+    const val = Number(p.serving_quantity)
+    if (val > 0 && val < 250) return val
+  }
+
+  // 2. Try parsing the quantity string (e.g. "6 x 60 g", "300g")
+  const quantityStr = (p.quantity || '').toLowerCase()
+  if (quantityStr) {
+    // Look for "X x Y g" pattern
+    const multiMatch = quantityStr.match(/(\d+)\s*x\s*(\d+(?:\.\d+)?)\s*g/)
+    if (multiMatch) return parseFloat(multiMatch[2])
+
+    // If it's just "60g", and it's a known single-item type (like a bar), we could use it
+    // But safely, we only use it if it's small
+    const singleMatch = quantityStr.match(/^(\d+(?:\.\d+)?)\s*g$/)
+    if (singleMatch) {
+      const val = parseFloat(singleMatch[1])
+      if (val > 0 && val < 100) return val
+    }
+  }
+  
+  // 3. Special case for Eggs (if name contains egg and no weight found)
+  const name = (p.product_name_no || p.product_name || '').toLowerCase()
+  if (name.includes('egg')) {
+     return 60 // Standard medium egg
+  }
+
+  return undefined
+}
+
 function mapOFFCategory(categories: string[]): FoodCategory {
   const cats = categories.join(' ').toLowerCase()
   
@@ -31,9 +65,42 @@ function mapOFFCategory(categories: string[]): FoodCategory {
   return 'OTHER'
 }
 
+function mapProduct(p: any): ExternalFoodItem {
+  const nutriments = p.nutriments || {}
+  return {
+    id: `off-${p.code}`,
+    name: p.product_name_no || p.product_name || 'Ukjent produkt',
+    brand: p.brands,
+    image_url: p.image_url,
+    unit_weight: detectUnitWeight(p),
+    baseAmount: 100,
+    baseUnit: 'GRAM',
+    protein: Number(nutriments.proteins_100g || 0),
+    carbs: Number(nutriments.carbohydrates_100g || 0),
+    fat: Number(nutriments.fat_100g || 0),
+    calories: Math.round(Number(nutriments['energy-kcal_100g'] || 0)),
+    category: mapOFFCategory(p.categories_hierarchy || []),
+    source: 'OFF'
+  }
+}
+
+export async function fetchExternalProduct(code: string): Promise<ExternalFoodItem | null> {
+  try {
+    const url = `https://world.openfoodfacts.org/api/v2/product/${code}.json`
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mat-Logger - Web - 1.0' }
+    })
+    if (!response.ok) return null
+    const data = await response.json()
+    if (!data.product) return null
+    return mapProduct(data.product)
+  } catch {
+    return null
+  }
+}
+
 async function fetchOFF(query: string, baseUrl: string, signal: AbortSignal): Promise<ExternalFoodItem[]> {
-  // Construct search URL with optimized fields
-  const fields = 'code,product_name,product_name_no,brands,image_url,nutriments,categories_hierarchy,serving_quantity,product_quantity'
+  const fields = 'code,product_name,product_name_no,brands,image_url,nutriments,categories_hierarchy,serving_quantity,product_quantity,quantity'
   const url = `${baseUrl}/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20&fields=${fields}`
   
   const response = await fetch(url, {
@@ -48,42 +115,17 @@ async function fetchOFF(query: string, baseUrl: string, signal: AbortSignal): Pr
   }
   
   const data = await response.json()
-  
-  return (data.products || []).map((p: any) => {
-    const nutriments = p.nutriments || {}
-    
-    // Heuristic for unit weight: check serving_quantity (often used for single items like eggs/bars)
-    let unitWeight = p.serving_quantity ? Number(p.serving_quantity) : undefined
-    
-    // Special case: if it's very large (e.g. a 500g pack), don't treat it as a single unit unless specifically noted
-    if (unitWeight && unitWeight > 250) unitWeight = undefined 
-
-    return {
-      id: `off-${p.code}`,
-      name: p.product_name_no || p.product_name || 'Ukjent produkt',
-      brand: p.brands,
-      image_url: p.image_url,
-      unit_weight: unitWeight,
-      protein_100g: Number(nutriments.proteins_100g || 0),
-      carbs_100g: Number(nutriments.carbohydrates_100g || 0),
-      fat_100g: Number(nutriments.fat_100g || 0),
-      calories_100g: Math.round(Number(nutriments['energy-kcal_100g'] || 0)),
-      category: mapOFFCategory(p.categories_hierarchy || []),
-      source: 'OFF' as const
-    }
-  })
+  return (data.products || []).map(mapProduct)
 }
 
 export async function searchExternalFood(query: string, preferNorwegian: boolean = true): Promise<ExternalFoodItem[]> {
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 8000) // Slightly longer timeout for fallback logic
+  const timeoutId = setTimeout(() => controller.abort(), 8000)
 
   try {
-    // 1. Try preferred source
     const primaryBaseUrl = preferNorwegian ? 'https://no.openfoodfacts.org' : 'https://world.openfoodfacts.org'
     let results = await fetchOFF(query, primaryBaseUrl, controller.signal)
     
-    // 2. If no results found and we preferred Norwegian, fallback to global search
     if (results.length === 0 && preferNorwegian) {
       results = await fetchOFF(query, 'https://world.openfoodfacts.org', controller.signal)
     }

@@ -11,16 +11,22 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum SubscriptionTier {
+  FREE
+  PREMIUM
+}
+
 model User {
-  id           String       @id @default(uuid())
-  email        String       @unique
-  weight       Float?
-  protein_goal Int?         @default(0)
-  created_at   DateTime     @default(now())
-  updated_at   DateTime     @updatedAt
-  food_logs    FoodLog[]
-  workout_logs WorkoutLog[]
-  food_items   FoodItem[]
+  id                String           @id @default(uuid())
+  email             String           @unique
+  weight            Float?
+  protein_goal      Int?             @default(0)
+  subscription_tier SubscriptionTier @default(FREE)
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
+  food_logs         FoodLog[]
+  workout_logs      WorkoutLog[]
+  food_items        FoodItem[]
 
   @@map("users")
 }
