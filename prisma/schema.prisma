@@ -27,9 +27,45 @@ model User {
   food_logs         FoodLog[]
   workout_logs      WorkoutLog[]
   food_items        FoodItem[]
+  biometric_logs    BiometricLog[]
+  integrations      Integration[]
 
   @@map("users")
 }
+
+model Integration {
+  id            String   @id @default(uuid())
+  user_id       String
+  provider      String   // e.g. "GARMIN", "APPLE_HEALTH"
+  access_token  String
+  refresh_token String?
+  expires_at    DateTime?
+  last_synced   DateTime?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, provider])
+  @@map("integrations")
+}
+
+model BiometricLog {
+  id               String   @id @default(uuid())
+  user_id          String
+  type             String   // SLEEP_SCORE, RESTING_HR, STRESS_LEVEL, BODY_BATTERY
+  value            Float
+  unit             String?
+  source           String?  // e.g. "GARMIN_FENIX_7"
+  logged_at        DateTime @default(now())
+  created_at       DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, type, logged_at])
+  @@map("biometric_logs")
+}
+...
 
 model ModelVersion {
   id           String       @id @default(uuid())

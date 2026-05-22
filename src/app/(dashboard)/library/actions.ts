@@ -159,7 +159,7 @@ export async function lookupExternalFood(name: string) {
 }
 
 /**
- * Search Action
+ * Search Action (Optimized for name and barcode)
  */
 export async function searchFoodItems(query: string, options: { preferNorwegian?: boolean, includeExternal?: boolean } = {}) {
   const supabase = await createClient()
@@ -179,11 +179,15 @@ export async function searchFoodItems(query: string, options: { preferNorwegian?
     })
 
     const isPremium = user?.subscription_tier === 'PREMIUM'
+    const isBarcode = /^\d{8,14}$/.test(query)
 
     // 1. Search internal DB
     const internalItems = await prisma.foodItem.findMany({
       where: {
-        name: { contains: query, mode: 'insensitive' },
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { barcode: query }
+        ],
         OR: [
           { user_id: null }, 
           { user_id: authUser.id },
@@ -192,10 +196,15 @@ export async function searchFoodItems(query: string, options: { preferNorwegian?
       orderBy: [{ user_id: 'desc' }, { name: 'asc' }],
     })
 
-    // 2. Search External (OFF) if requested and user is premium
+    // 2. Search External (OFF)
     let externalItems: any[] = []
     if (options.includeExternal && isPremium) {
-      externalItems = await searchExternalFood(query, options.preferNorwegian ?? true)
+      if (isBarcode) {
+        const product = await fetchExternalProduct(query)
+        if (product) externalItems = [product]
+      } else {
+        externalItems = await searchExternalFood(query, options.preferNorwegian ?? true)
+      }
     }
 
     return { 

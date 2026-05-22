@@ -86,7 +86,7 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
     setStatusMessage(null)
 
     const result = await executeLogAction('FOOD', {
-      foodItemId: foodItem.id,
+      foodItem,
       inputMode,
       inputAmount: numericValue,
       calculatedGrams: calculated.calculatedGrams,

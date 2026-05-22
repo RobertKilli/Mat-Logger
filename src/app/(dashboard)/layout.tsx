@@ -6,6 +6,7 @@ import HydrateCockpit from '@/components/dashboard/HydrateCockpit'
 import SyncStatus from '@/components/layout/SyncStatus'
 import { subDays } from 'date-fns'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 
 interface WorkoutSummary {
   intensity: number
@@ -38,6 +39,7 @@ export default async function DashboardLayout({
         id: user.id,
         email: user.email,
         protein_goal: 0,
+        subscription_tier: 'PREMIUM'
       }
     })
   }
@@ -77,9 +79,11 @@ export default async function DashboardLayout({
       <header className="border-b border-white/5 bg-[#141416]/50 p-6 backdrop-blur-xl sticky top-0 z-20">
         <div className="mx-auto max-w-4xl flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <h1 className="font-mono text-xl font-bold tracking-tighter text-[#00FF41]">
-              BODY COCKPIT v1.0
-            </h1>
+            <Link href="/" className="group">
+              <h1 className="font-mono text-xl font-bold tracking-tighter text-[#00FF41] group-hover:opacity-80 transition-opacity">
+                BODY COCKPIT v1.0
+              </h1>
+            </Link>
             <SyncStatus />
           </div>
           <div className="flex items-center gap-4">
