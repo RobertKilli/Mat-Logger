@@ -1,6 +1,9 @@
 import FoodSearch from '@/components/dashboard/FoodSearch'
 import { getCategorizedLibrary } from './actions'
 import { FoodCategory } from '@prisma/client'
+import { createClient } from '@/utils/supabase/server'
+import { prisma } from '@/lib/prisma'
+import Link from 'next/link'
 
 const CATEGORY_LABELS: Record<FoodCategory, string> = {
   MEAT: 'Kjøtt',
@@ -14,24 +17,42 @@ const CATEGORY_LABELS: Record<FoodCategory, string> = {
 }
 
 export default async function LibraryPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const userRecord = user ? await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { subscription_tier: true }
+  }) : null
+
+  const tier = userRecord?.subscription_tier || 'FREE'
   const response = await getCategorizedLibrary()
-  const categorized = response.data || {}
+  const categorized = response?.data || {}
   
   const categories = Object.keys(categorized) as FoodCategory[]
 
   return (
     <div className="p-4 sm:p-8">
       <div className="mx-auto max-w-4xl space-y-12">
-        <header className="flex flex-col gap-4">
-          <h1 className="font-mono text-3xl font-bold tracking-tighter text-[#00FF41]">
-            FOOD LIBRARY
-          </h1>
-          <p className="text-zinc-400">Finn drivstoff til din neste misjon</p>
-          
-          <div className="rounded-2xl bg-[#141416] p-6 ring-1 ring-white/10 shadow-2xl">
-            <FoodSearch />
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="font-mono text-3xl font-bold tracking-tighter text-[#00FF41]">
+              FOOD LIBRARY
+            </h1>
+            <p className="text-zinc-400 font-mono text-[10px] uppercase tracking-widest mt-1">
+              System status: {tier === 'PREMIUM' ? 'ELITE PILOT ACCESS' : 'CADET LEVEL'}
+            </p>
           </div>
+          {tier === 'FREE' && (
+            <Link href="/upgrade" className="rounded-lg bg-[#00FF41]/10 px-4 py-2 font-mono text-[10px] font-bold text-[#00FF41] ring-1 ring-[#00FF41]/20 hover:bg-[#00FF41]/20 transition-all">
+               UPGRADE TO ELITE
+            </Link>
+          )}
         </header>
+
+        <div className="rounded-2xl bg-[#141416] p-6 ring-1 ring-white/10 shadow-2xl">
+          <FoodSearch />
+        </div>
 
         {/* Categorized Lists */}
         <section className="space-y-10">
@@ -50,7 +71,7 @@ export default async function LibraryPage() {
                 </h3>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {categorized[cat].map(item => (
-                    <a 
+                    <Link 
                       key={item.id} 
                       href={`/quick-log?item=${item.id}`}
                       className="group flex items-center gap-3 rounded-xl bg-white/5 p-3 ring-1 ring-white/10 hover:bg-white/10 transition-all"
@@ -65,9 +86,9 @@ export default async function LibraryPage() {
                       </div>
                       <div className="overflow-hidden">
                         <p className="truncate font-bold text-sm text-zinc-300 group-hover:text-[#00FF41]">{item.name.toUpperCase()}</p>
-                        <p className="font-mono text-[9px] text-zinc-500">{item.calories_100g} kcal / 100g</p>
+                        <p className="font-mono text-[9px] text-zinc-500">{Math.round(item.calories)} kcal / {item.baseAmount}{item.baseUnit === 'GRAM' ? 'g' : item.baseUnit === 'ML' ? 'ml' : 'stk'}</p>
                       </div>
-                    </a>
+                    </Link>
                   ))}
                 </div>
               </div>

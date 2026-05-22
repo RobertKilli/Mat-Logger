@@ -10,20 +10,18 @@ export interface CalculatedNutrition {
 
 /**
  * Calculates total nutritional values based on input mode and amount.
+ * Follows the formula provided by the user.
  * 
- * Rules:
- * - GRAMS: calculatedGrams = inputAmount
- * - UNITS: calculatedGrams = inputAmount * gramsPerUnit
- * - factor = calculatedGrams / foodItem.baseAmount
- * - macro = foodItem.macro * factor
+ * factor = calculatedGrams / baseAmount
+ * macro = macroPer100g * factor
  */
-export function calculateNutrition(
-  foodItem: Pick<FoodItem, 'baseAmount' | 'gramsPerUnit' | 'protein' | 'carbs' | 'fat' | 'calories'>,
+export function calculateFoodLogNutrition(
+  foodItem: Pick<FoodItem, 'baseAmount' | 'gramsPerUnit' | 'servingSize' | 'proteinPer100g' | 'carbsPer100g' | 'fatPer100g' | 'caloriesPer100g'>,
   inputMode: InputMode,
   inputAmount: number
 ): CalculatedNutrition {
   if (inputAmount <= 0) {
-    throw new Error('Input amount must be greater than zero')
+    throw new Error('Mengde må være større enn null')
   }
 
   let calculatedGrams = 0
@@ -32,21 +30,29 @@ export function calculateNutrition(
     calculatedGrams = inputAmount
   } else if (inputMode === 'UNITS') {
     if (foodItem.gramsPerUnit == null || foodItem.gramsPerUnit <= 0) {
-      throw new Error(`Cannot calculate by UNITS. 'gramsPerUnit' is missing or invalid for this food item.`)
+      throw new Error(`Kan ikke beregne basert på ANTALL. Stykkvekt mangler for denne matvaren.`)
     }
     calculatedGrams = inputAmount * foodItem.gramsPerUnit
+  } else if (inputMode === 'SERVING') {
+    if (foodItem.servingSize == null || foodItem.servingSize <= 0) {
+      throw new Error(`Kan ikke beregne basert på PORSJON. Porsjonsstørrelse mangler for denne matvaren.`)
+    }
+    calculatedGrams = inputAmount * foodItem.servingSize
   } else {
-    throw new Error(`Invalid inputMode: ${inputMode}`)
+    throw new Error(`Ugyldig inntaksmodus: ${inputMode}`)
   }
 
-  // Calculate the scaling factor relative to the base amount (default is usually 100g)
-  const factor = calculatedGrams / foodItem.baseAmount
+  // Factor relative to the nutrition basis (usually 100g)
+  const factor = calculatedGrams / (foodItem.baseAmount || 100)
 
   return {
     calculatedGrams: Number(calculatedGrams.toFixed(1)),
-    calculatedProtein: Number((foodItem.protein * factor).toFixed(1)),
-    calculatedCarbs: Number((foodItem.carbs * factor).toFixed(1)),
-    calculatedFat: Number((foodItem.fat * factor).toFixed(1)),
-    calculatedCalories: Math.round(foodItem.calories * factor)
+    calculatedProtein: Number((foodItem.proteinPer100g * factor).toFixed(2)),
+    calculatedCarbs: Number((foodItem.carbsPer100g * factor).toFixed(2)),
+    calculatedFat: Number((foodItem.fatPer100g * factor).toFixed(2)),
+    calculatedCalories: Math.round(foodItem.caloriesPer100g * factor)
   }
 }
+
+// Keep the old function name as an alias if needed by other components during transition
+export const calculateNutrition = calculateFoodLogNutrition;

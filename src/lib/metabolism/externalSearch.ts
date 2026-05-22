@@ -2,28 +2,37 @@ import { FoodCategory, BaseUnit } from '@prisma/client'
 
 export interface ExternalFoodItem {
   id: string
+  externalId: string
+  barcode?: string
   name: string
   brand?: string
   image_url?: string
-  unit_weight?: number
+  
+  // Weights and Units
   baseAmount: number
   baseUnit: BaseUnit
-  protein: number
-  carbs: number
-  fat: number
-  calories: number
+  gramsPerUnit?: number
+  servingSize?: number
+  servingUnit?: string
+  
+  // Macros (stored as per baseAmount, typically 100g)
+  proteinPer100g: number
+  carbsPer100g: number
+  fatPer100g: number
+  caloriesPer100g: number
+  
   category: FoodCategory
-  source: 'OFF' // Open Food Facts
+  source: string
 }
 
 /**
  * Heuristic to extract unit weight from various OFF fields
  */
 function detectUnitWeight(p: any): number | undefined {
-  // 1. Try explicit serving_quantity
+  // 1. Try explicit serving_quantity (Open Food Facts often has this)
   if (p.serving_quantity) {
     const val = Number(p.serving_quantity)
-    if (val > 0 && val < 250) return val
+    if (val > 0 && val < 500) return val
   }
 
   // 2. Try parsing the quantity string (e.g. "6 x 60 g", "300g")
@@ -33,54 +42,61 @@ function detectUnitWeight(p: any): number | undefined {
     const multiMatch = quantityStr.match(/(\d+)\s*x\s*(\d+(?:\.\d+)?)\s*g/)
     if (multiMatch) return parseFloat(multiMatch[2])
 
-    // If it's just "60g", and it's a known single-item type (like a bar), we could use it
-    // But safely, we only use it if it's small
+    // If it's just "60g", and it's a small single item, use it
     const singleMatch = quantityStr.match(/^(\d+(?:\.\d+)?)\s*g$/)
     if (singleMatch) {
       const val = parseFloat(singleMatch[1])
-      if (val > 0 && val < 100) return val
+      if (val > 0 && val < 150) return val
     }
   }
   
   // 3. Special case for Eggs (if name contains egg and no weight found)
   const name = (p.product_name_no || p.product_name || '').toLowerCase()
   if (name.includes('egg')) {
-     return 60 // Standard medium egg
+     return 55 // Standard medium egg
   }
 
   return undefined
 }
 
 function mapOFFCategory(categories: string[]): FoodCategory {
-  const cats = categories.join(' ').toLowerCase()
+  const cats = (categories || []).join(' ').toLowerCase()
   
-  if (cats.includes('meat') || cats.includes('kjøtt') || cats.includes('skinke')) return 'MEAT'
-  if (cats.includes('fish') || cats.includes('fisk') || cats.includes('seafood') || cats.includes('sjømat')) return 'FISH'
+  if (cats.includes('meat') || cats.includes('kjøtt') || cats.includes('chicken') || cats.includes('kylling')) return 'MEAT'
+  if (cats.includes('fish') || cats.includes('fisk') || cats.includes('seafood')) return 'FISH'
   if (cats.includes('fruit') || cats.includes('frukt')) return 'FRUIT'
   if (cats.includes('vegetable') || cats.includes('grønnsak')) return 'VEGETABLE'
-  if (cats.includes('dairy') || cats.includes('meieri') || cats.includes('cheese') || cats.includes('milk') || cats.includes('ost') || cats.includes('melk') || cats.includes('yoghurt')) return 'DAIRY'
-  if (cats.includes('grain') || cats.includes('bread') || cats.includes('brød') || cats.includes('cereal') || cats.includes('korn')) return 'GRAIN'
-  if (cats.includes('supplement') || cats.includes('protein powder') || cats.includes('kosttilskudd')) return 'SUPPLEMENT'
+  if (cats.includes('dairy') || cats.includes('meieri') || cats.includes('egg') || cats.includes('milk') || cats.includes('melk')) return 'DAIRY'
+  if (cats.includes('grain') || cats.includes('bread') || cats.includes('brød') || cats.includes('cereal') || cats.includes('pasta')) return 'GRAIN'
+  if (cats.includes('supplement') || cats.includes('protein powder')) return 'SUPPLEMENT'
   
   return 'OTHER'
 }
 
 function mapProduct(p: any): ExternalFoodItem {
   const nutriments = p.nutriments || {}
+  
   return {
     id: `off-${p.code}`,
+    externalId: p.code,
+    barcode: p.code,
     name: p.product_name_no || p.product_name || 'Ukjent produkt',
     brand: p.brands,
     image_url: p.image_url,
-    unit_weight: detectUnitWeight(p),
+    
     baseAmount: 100,
     baseUnit: 'GRAM',
-    protein: Number(nutriments.proteins_100g || 0),
-    carbs: Number(nutriments.carbohydrates_100g || 0),
-    fat: Number(nutriments.fat_100g || 0),
-    calories: Math.round(Number(nutriments['energy-kcal_100g'] || 0)),
+    gramsPerUnit: detectUnitWeight(p),
+    servingSize: p.serving_quantity ? Number(p.serving_quantity) : undefined,
+    servingUnit: p.serving_size || 'porsjon',
+
+    proteinPer100g: Number(nutriments.proteins_100g || 0),
+    carbsPer100g: Number(nutriments.carbohydrates_100g || 0),
+    fatPer100g: Number(nutriments.fat_100g || 0),
+    caloriesPer100g: Math.round(Number(nutriments['energy-kcal_100g'] || 0)),
+    
     category: mapOFFCategory(p.categories_hierarchy || []),
-    source: 'OFF'
+    source: 'Open Food Facts'
   }
 }
 
@@ -94,13 +110,14 @@ export async function fetchExternalProduct(code: string): Promise<ExternalFoodIt
     const data = await response.json()
     if (!data.product) return null
     return mapProduct(data.product)
-  } catch {
+  } catch (error) {
+    console.error('Fetch external product error:', error)
     return null
   }
 }
 
 async function fetchOFF(query: string, baseUrl: string, signal: AbortSignal): Promise<ExternalFoodItem[]> {
-  const fields = 'code,product_name,product_name_no,brands,image_url,nutriments,categories_hierarchy,serving_quantity,product_quantity,quantity'
+  const fields = 'code,product_name,product_name_no,brands,image_url,nutriments,categories_hierarchy,serving_quantity,serving_size,product_quantity,quantity'
   const url = `${baseUrl}/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20&fields=${fields}`
   
   const response = await fetch(url, {

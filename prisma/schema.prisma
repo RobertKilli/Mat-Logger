@@ -60,37 +60,45 @@ enum BaseUnit {
 }
 
 model FoodItem {
-  id             String       @id @default(uuid())
-  user_id        String?      // Nullable for global items
-  name           String
-  brand          String?
-  category       FoodCategory @default(OTHER)
-  image_url      String?
+  id               String       @id @default(uuid())
+  user_id          String?      // Nullable for global items
+  name             String
+  brand            String?
+  source           String       @default("INTERNAL") // e.g., "INTERNAL", "Open Food Facts"
+  externalId       String?      // ID from source
+  barcode          String?
+  category         FoodCategory @default(OTHER)
+  image_url        String?
   
-  // New flexible logging fields
-  baseAmount     Float        @default(100)
-  baseUnit       BaseUnit     @default(GRAM)
-  gramsPerUnit   Float?       // Weight in grams for one unit (e.g. 60 for an egg)
+  // Flexible logging fields
+  baseAmount       Float        @default(100)
+  baseUnit         BaseUnit     @default(GRAM)
+  gramsPerUnit     Float?       // Weight in grams for one unit (e.g. 60 for an egg)
   
-  // Nutrients per baseAmount
-  protein        Float
-  carbs          Float
-  fat            Float
-  calories       Float
+  servingSize      Float?       // Weight in grams for one serving
+  servingUnit      String?      // Name of serving (e.g. "portion", "cup")
+
+  // Nutrients (usually per 100g or per baseAmount)
+  proteinPer100g   Float
+  carbsPer100g     Float
+  fatPer100g       Float
+  caloriesPer100g  Float
   
-  created_at     DateTime     @default(now())
-  updated_at     DateTime     @updatedAt
-  food_logs      FoodLog[]
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+  food_logs        FoodLog[]
 
   user User? @relation(fields: [user_id], references: [id])
 
   @@index([name])
+  @@index([barcode])
   @@map("food_items")
 }
 
 enum InputMode {
   GRAMS
   UNITS
+  SERVING
 }
 
 enum MealType {
