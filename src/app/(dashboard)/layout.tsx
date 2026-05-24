@@ -28,20 +28,34 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  let dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-  })
-
-  // Ensure user record exists in our DB
-  if (!dbUser && user.email) {
-    dbUser = await prisma.user.create({
-      data: {
-        id: user.id,
-        email: user.email,
-        protein_goal: 0,
-        subscription_tier: 'PREMIUM'
-      }
+  let dbUser = null;
+  try {
+    dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
     })
+
+    // Ensure user record exists in our DB
+    if (!dbUser && user.email) {
+      dbUser = await prisma.user.create({
+        data: {
+          id: user.id,
+          email: user.email,
+          protein_goal: 0,
+          subscription_tier: 'PREMIUM',
+          display_name: 'Pilot',
+          theme_color: '#00FF41'
+        }
+      })
+    }
+  } catch (dbError) {
+    console.error('Database connection or sync error in layout:', dbError)
+    // Fallback for UI stability
+    dbUser = {
+       display_name: 'Pilot',
+       theme_color: '#00FF41',
+       weight: null,
+       protein_goal: 0
+    }
   }
 
   const totalsResponse = await getDailyTotals()
@@ -68,6 +82,9 @@ export default async function DashboardLayout({
     },
   })
 
+  const themeColor = dbUser?.theme_color || '#00FF41'
+  const displayName = dbUser?.display_name || 'Pilot'
+
   return (
     <div className="flex min-h-screen flex-col bg-[#0A0A0B] font-sans text-white">
       <HydrateCockpit 
@@ -80,14 +97,22 @@ export default async function DashboardLayout({
         <div className="mx-auto max-w-4xl flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/" className="group">
-              <h1 className="font-mono text-xl font-bold tracking-tighter text-[#00FF41] group-hover:opacity-80 transition-opacity">
+              <h1 className="font-mono text-xl font-bold tracking-tighter group-hover:opacity-80 transition-opacity" style={{ color: themeColor }}>
                 BODY COCKPIT v1.0
               </h1>
             </Link>
             <SyncStatus />
           </div>
-          <div className="flex items-center gap-4">
-            <span className="font-mono text-[10px] text-zinc-500 uppercase">{user.email}</span>
+          <div className="flex items-center gap-5">
+            <Link href="/settings" className="flex items-center gap-2 group transition-all">
+               <div className="text-right hidden sm:block">
+                  <p className="font-mono text-[10px] font-bold text-white uppercase group-hover:text-zinc-300">{displayName}</p>
+                  <p className="font-mono text-[7px] text-zinc-500 uppercase tracking-widest">Config_Pilot</p>
+               </div>
+               <div className="h-8 w-8 rounded-full bg-white/5 flex items-center justify-center ring-1 ring-white/10 group-hover:ring-white/30 transition-all">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+               </div>
+            </Link>
             <form action={logout}>
               <button type="submit" className="font-mono text-[10px] text-red-500 uppercase hover:underline">
                 Exit

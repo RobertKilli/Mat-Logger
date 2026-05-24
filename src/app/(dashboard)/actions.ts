@@ -20,21 +20,37 @@ export async function getDailyTotals(dateStr?: string) {
     const start = startOfDay(targetDate)
     const end = endOfDay(targetDate)
 
-    const logs = await prisma.foodLog.findMany({
-      where: {
-        user_id: user.id,
-        logged_at: {
-          gte: start,
-          lte: end,
+    let logs = []
+    try {
+      logs = await prisma.foodLog.findMany({
+        where: {
+          user_id: user.id,
+          logged_at: {
+            gte: start,
+            lte: end,
+          },
         },
-      },
-      include: {
-        food_item: true,
-      },
-      orderBy: {
-        logged_at: 'asc'
+        include: {
+          food_item: true,
+        },
+        orderBy: {
+          logged_at: 'asc'
+        }
+      })
+    } catch (dbError) {
+      console.error('Database connection error in getDailyTotals:', dbError)
+      // Return empty data instead of crashing
+      return {
+        data: {
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+          calories: 0,
+          recentLogs: [],
+          dbError: true
+        }
       }
-    })
+    }
 
     const totals = logs.reduce(
       (acc, log) => {
@@ -67,7 +83,7 @@ export async function getDailyTotals(dateStr?: string) {
       },
     }
   } catch (e) {
-    console.error('Error fetching daily totals:', e)
+    console.error('General error in getDailyTotals:', e)
     return { error: 'Failed to aggregate logs' }
   }
 }
