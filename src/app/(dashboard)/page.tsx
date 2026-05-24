@@ -11,7 +11,7 @@ import { getLatestBiometrics } from './profile/garminActions'
 import { generateGuidance } from '@/lib/metabolism/guidance'
 import { format, addDays, subDays, isToday, parseISO } from 'date-fns'
 import { nb } from 'date-fns/locale'
-import { prisma } from '@/lib/prisma'
+import { prisma, getSafePrisma } from '@/lib/prisma'
 
 interface DashboardPageProps {
   searchParams: Promise<{ date?: string }>
@@ -36,22 +36,39 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     ? 'I DAG' 
     : format(currentDate, 'd. MMMM yyyy', { locale: nb }).toUpperCase()
 
-  // 1. Fetch all operational data
-  const [totalsResponse, biometricsResponse, recentWorkouts] = await Promise.all([
-    getDailyTotals(date),
-    getLatestBiometrics(),
-    prisma.workoutLog.findMany({
-        where: { user_id: user.id, logged_at: { gte: subDays(new Date(), 7) } },
-        select: { intensity: true, logged_at: true }
-    })
-  ])
+  // 1. Safe data fetching with strict guards
+  let dailyData: any = { protein: 0, carbs: 0, fat: 0, calories: 0, recentLogs: [], proteinGoal: 180 };
+  let biometrics: any[] = [];
+  let recentWorkouts: any[] = [];
 
-  const dailyData = totalsResponse.data || { protein: 0, carbs: 0, fat: 0, calories: 0, recentLogs: [] }
+  try {
+    const prisma = getSafePrisma();
+    if (prisma) {
+        const [totalsRes, bioRes] = await Promise.all([
+            getDailyTotals(date),
+            getLatestBiometrics()
+        ]);
+        
+        dailyData = totalsRes.data || dailyData;
+        biometrics = bioRes.data || [];
+        
+        try {
+            recentWorkouts = await prisma.workoutLog.findMany({
+                where: { user_id: user.id, logged_at: { gte: subDays(new Date(), 7) } },
+                select: { intensity: true, logged_at: true }
+            });
+        } catch {
+            recentWorkouts = [];
+        }
+    }
+  } catch (err) {
+    console.error('DASHBOARD_PAGE_FAILSAFE_ACTIVE: Switching to simulation.')
+  }
   
   // 2. Generate AI Guidance (Mission Briefing)
   const briefing = generateGuidance(
-    biometricsResponse.data || [],
-    { ...dailyData, goal: dailyData.proteinGoal || 0 },
+    biometrics,
+    { ...dailyData, goal: dailyData.proteinGoal || 180 },
     recentWorkouts
   )
 
