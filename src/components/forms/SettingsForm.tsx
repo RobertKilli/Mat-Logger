@@ -149,7 +149,7 @@ export default function SettingsForm({ initialData }: SettingsFormProps) {
             </div>
             <p className="font-mono text-[8px] text-zinc-500 uppercase tracking-widest">Target: {calorieGoal} KCAL/DAY</p>
          </div>
-       section>
+      </div>
 
       <button
         type="submit"
