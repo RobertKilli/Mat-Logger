@@ -6,6 +6,7 @@ import MealTimer from '@/components/dashboard/MealTimer'
 import DailyLogList from '@/components/dashboard/DailyLogList'
 import BiometricTelemetry from '@/components/dashboard/BiometricTelemetry'
 import MissionCommandCenter from '@/components/dashboard/MissionCommandCenter'
+import HydrateCockpit from '@/components/dashboard/HydrateCockpit'
 import Link from 'next/link'
 import { getDailyTotals } from './actions'
 import { getLatestBiometrics } from './profile/garminActions'
@@ -38,7 +39,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     : format(currentDate, 'd. MMMM yyyy', { locale: nb }).toUpperCase()
 
   // 1. Safe data fetching with strict guards
-  let dailyData: any = { protein: 0, carbs: 0, fat: 0, calories: 0, recentLogs: [], proteinGoal: 180 };
+  let dailyData: any = { protein: 0, carbs: 0, fat: 0, calories: 0, recentLogs: [], proteinGoal: 180, calorieGoal: 2500, goal: 'MAINTAIN' };
   let biometrics: any[] = [];
   let recentWorkouts: any[] = [];
 
@@ -78,6 +79,16 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-8 p-6 sm:p-12">
+      <HydrateCockpit 
+        baseline={{ 
+          weight: dailyData.weight ?? 85, 
+          proteinGoal: dailyData.proteinGoal ?? 180,
+          calorieGoal: dailyData.calorieGoal ?? 2500,
+          goal: dailyData.goal ?? 'MAINTAIN'
+        }}
+        dailyTotals={dailyData}
+        recentWorkouts={recentWorkouts}
+      />
       
       {/* Date Navigation */}
       <div className="flex items-center justify-between rounded-2xl bg-[#141416] p-4 ring-1 ring-white/10 shadow-lg">

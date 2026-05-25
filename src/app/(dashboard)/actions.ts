@@ -16,6 +16,8 @@ export async function getDailyTotals(dateStr?: string) {
     calories: 1850,
     recentLogs: [],
     proteinGoal: 180,
+    calorieGoal: 2500,
+    goal: 'MAINTAIN',
     isSimulated: true
   }
 
@@ -25,12 +27,18 @@ export async function getDailyTotals(dateStr?: string) {
 
   try {
     const {
-      data: { user },
+      data: { user: authUser },
     } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (!authUser) {
       return { error: 'Unauthorized' }
     }
+
+    // Fetch user goals first
+    const dbUser = await prisma.user.findUnique({
+      where: { id: authUser.id },
+      select: { calorie_goal: true, protein_goal: true, goal: true }
+    })
 
     const targetDate = dateStr ? parseISO(dateStr) : new Date()
     const start = startOfDay(targetDate)
@@ -39,7 +47,7 @@ export async function getDailyTotals(dateStr?: string) {
     try {
       const logs = await prisma.foodLog.findMany({
         where: {
-          user_id: user.id,
+          user_id: authUser.id,
           logged_at: { gte: start, lte: end },
         },
         include: { food_item: true },
@@ -64,6 +72,9 @@ export async function getDailyTotals(dateStr?: string) {
           carbs: Number(totals.carbs.toFixed(1)),
           fat: Number(totals.fat.toFixed(1)),
           calories: Math.round(totals.calories),
+          proteinGoal: dbUser?.protein_goal || 0,
+          calorieGoal: dbUser?.calorie_goal || 2500,
+          goal: dbUser?.goal || 'MAINTAIN',
           recentLogs: logs.map(l => ({
             id: l.id,
             name: l.food_item.name,

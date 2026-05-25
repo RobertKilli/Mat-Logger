@@ -105,6 +105,9 @@ export const useCockpitStore = create<CockpitState>()(
           dailyConsumedFat: totals.fat,
           dailyConsumedCalories: totals.calories,
           dailyFoodLogs: totals.recentLogs ?? get().dailyFoodLogs,
+          proteinGoal: totals.proteinGoal ?? get().proteinGoal,
+          calorieGoal: totals.calorieGoal ?? get().calorieGoal,
+          goal: totals.goal ?? get().goal,
         })
         get().updateMetabolicState()
       },

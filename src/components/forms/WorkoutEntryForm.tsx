@@ -26,6 +26,7 @@ export default function WorkoutEntryForm() {
   
   // Exercise Library State
   const [libraryExercises, setLibraryExercises] = useState<{id: string, name: string}[]>([])
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(false)
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showLibrary, setShowLibrary] = useState(false)
@@ -37,8 +38,17 @@ export default function WorkoutEntryForm() {
   // Fetch library when category changes
   useEffect(() => {
     if (category) {
+      setIsLoadingLibrary(true)
       getExercisesByCategory(category).then(res => {
-        if (res.data) setLibraryExercises(res.data)
+        if (res.data) {
+          setLibraryExercises(res.data)
+        } else if (res.error) {
+          setStatusMessage({ type: 'error', text: res.error })
+        }
+        setIsLoadingLibrary(false)
+      }).catch(() => {
+        setStatusMessage({ type: 'error', text: 'Nettverksfeil ved henting av bibliotek' })
+        setIsLoadingLibrary(false)
       })
     } else {
       setLibraryExercises([])
@@ -151,10 +161,11 @@ export default function WorkoutEntryForm() {
             <h3 className="font-mono text-[10px] uppercase text-zinc-500 tracking-widest">Økt_Innhold</h3>
             <button
               type="button"
+              disabled={isLoadingLibrary}
               onClick={() => setShowLibrary(true)}
-              className="font-mono text-[9px] font-bold text-[#00FF41] uppercase hover:underline"
+              className="font-mono text-[9px] font-bold text-[#00FF41] uppercase hover:underline disabled:opacity-30"
             >
-              + Legg til øvelse
+              {isLoadingLibrary ? 'HENTER...' : '+ Legg til øvelse'}
             </button>
           </div>
 
@@ -220,7 +231,7 @@ export default function WorkoutEntryForm() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl bg-[#141416] p-6 ring-1 ring-white/10 shadow-2xl space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="font-mono text-sm font-bold text-white uppercase tracking-widest">Øvelses_Bibliotek</h3>
+              <h3 className="font-mono text-sm font-bold text-white uppercase tracking-widest">Øvelses_Bibliotek ({libraryExercises.length})</h3>
               <button onClick={() => setShowLibrary(false)} className="text-zinc-500 hover:text-white">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
               </button>
@@ -247,7 +258,7 @@ export default function WorkoutEntryForm() {
                 </button>
               ))}
               {filteredLibrary.length === 0 && (
-                <p className="text-center py-4 font-mono text-[10px] text-zinc-600">Ingen treff</p>
+                <p className="text-center py-4 font-mono text-[10px] text-zinc-600">Ingen treff i {category} kategori</p>
               )}
             </div>
           </div>
