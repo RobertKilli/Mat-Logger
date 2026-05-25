@@ -54,6 +54,9 @@ interface CockpitState {
     fat: number
     calories: number
     recentLogs?: DailyFoodLog[]
+    proteinGoal?: number
+    calorieGoal?: number
+    goal?: 'CUT' | 'MAINTAIN' | 'BULK'
   }) => void
   setWorkoutLogs: (logs: { intensity: number; logged_at: Date }[]) => void
   setPreview: (data: Partial<PreviewData> | null) => void
