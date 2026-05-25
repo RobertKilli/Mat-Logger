@@ -8,6 +8,7 @@ import NotificationManager from '@/components/dashboard/NotificationManager'
 import { subDays } from 'date-fns'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { UserGoal } from '@prisma/client'
 
 interface WorkoutSummary {
   intensity: number
@@ -47,7 +48,7 @@ export default async function DashboardLayout({
           display_name: 'Pilot',
           theme_color: '#00FF41',
           calorie_goal: 2500,
-          goal: 'MAINTAIN'
+          goal: 'MAINTAIN' as UserGoal
         }
       })
     }
@@ -60,13 +61,22 @@ export default async function DashboardLayout({
        weight: 85,
        protein_goal: 180,
        calorie_goal: 2500,
-       goal: 'MAINTAIN'
+       goal: 'MAINTAIN' as UserGoal
     }
   }
 
   // Safe fetch for dashboard metrics
   const totalsResponse = await getDailyTotals()
-  const dailyTotalsData = totalsResponse.data || { protein: 0, carbs: 0, fat: 0, calories: 0, recentLogs: [] }
+  const dailyTotalsData = totalsResponse.data || { 
+    protein: 0, 
+    carbs: 0, 
+    fat: 0, 
+    calories: 0, 
+    recentLogs: [],
+    proteinGoal: 180,
+    calorieGoal: 2500,
+    goal: 'MAINTAIN' as UserGoal
+  }
 
   // Safe fetch for CNS calculation
   let recentWorkouts: WorkoutSummary[] = []
@@ -93,7 +103,7 @@ export default async function DashboardLayout({
           calorieGoal: dbUser?.calorie_goal ?? 2500,
           goal: dbUser?.goal ?? 'MAINTAIN'
         }}
-        dailyTotals={dailyTotalsData}
+        dailyTotals={dailyTotalsData as any}
         recentWorkouts={recentWorkouts}
       />
       

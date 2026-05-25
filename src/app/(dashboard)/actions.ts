@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { getSafePrisma } from '@/lib/prisma'
 import { startOfDay, endOfDay, parseISO } from 'date-fns'
+import { UserGoal } from '@prisma/client'
 
 export async function getDailyTotals(dateStr?: string) {
   const supabase = await createClient()
@@ -17,7 +18,7 @@ export async function getDailyTotals(dateStr?: string) {
     recentLogs: [],
     proteinGoal: 180,
     calorieGoal: 2500,
-    goal: 'MAINTAIN',
+    goal: 'MAINTAIN' as UserGoal,
     isSimulated: true
   }
 
@@ -74,7 +75,7 @@ export async function getDailyTotals(dateStr?: string) {
           calories: Math.round(totals.calories),
           proteinGoal: dbUser?.protein_goal || 0,
           calorieGoal: dbUser?.calorie_goal || 2500,
-          goal: dbUser?.goal || 'MAINTAIN',
+          goal: (dbUser?.goal || 'MAINTAIN') as UserGoal,
           recentLogs: logs.map(l => ({
             id: l.id,
             name: l.food_item.name,
