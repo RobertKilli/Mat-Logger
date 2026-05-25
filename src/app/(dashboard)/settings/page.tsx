@@ -20,6 +20,7 @@ export default async function SettingsPage() {
       weight: true,
       calorie_goal: true,
       goal: true,
+      language: true,
     }
   })
 
@@ -52,6 +53,7 @@ export default async function SettingsPage() {
                 calorie_goal: dbUser?.calorie_goal ?? 2500,
                 goal: dbUser?.goal ?? 'MAINTAIN',
                 weight: dbUser?.weight ?? null,
+                language: dbUser?.language ?? 'NB',
               }}
             />
           </div>

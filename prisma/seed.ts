@@ -107,27 +107,64 @@ async function main() {
   console.log('Seeding global exercises...')
 
   const globalExercises = [
-    // PUSH
-    { name: 'Benkpress', category: 'PUSH' as TrainingCategory },
-    { name: 'Militærpress', category: 'PUSH' as TrainingCategory },
-    { name: 'Dips', category: 'PUSH' as TrainingCategory },
-    { name: 'Sidehev', category: 'PUSH' as TrainingCategory },
-    { name: 'Triceps Pushdown', category: 'PUSH' as TrainingCategory },
+    // PUSH (Bryst, Skuldre, Triceps)
+    { name: 'Benkpress (Manualer)', category: 'PUSH' as TrainingCategory },
+    { name: 'Benkpress (Stang)', category: 'PUSH' as TrainingCategory },
+    { name: 'Skråbenk (Manualer)', category: 'PUSH' as TrainingCategory },
+    { name: 'Skråbenk (Stang)', category: 'PUSH' as TrainingCategory },
+    { name: 'Flyes (Manualer)', category: 'PUSH' as TrainingCategory },
+    { name: 'Flyes (Kabel)', category: 'PUSH' as TrainingCategory },
+    { name: 'Push-ups', category: 'PUSH' as TrainingCategory },
+    { name: 'Militærpress (Stang)', category: 'PUSH' as TrainingCategory },
+    { name: 'Skulderpress (Manualer)', category: 'PUSH' as TrainingCategory },
+    { name: 'Sidehev (Manualer)', category: 'PUSH' as TrainingCategory },
+    { name: 'Sidehev (Kabel)', category: 'PUSH' as TrainingCategory },
+    { name: 'Fronthev (Manualer)', category: 'PUSH' as TrainingCategory },
+    { name: 'Dips (Bryst-fokus)', category: 'PUSH' as TrainingCategory },
+    { name: 'Dips (Triceps-fokus)', category: 'PUSH' as TrainingCategory },
+    { name: 'Triceps Pushdown (Tau)', category: 'PUSH' as TrainingCategory },
+    { name: 'Triceps Pushdown (Stang)', category: 'PUSH' as TrainingCategory },
+    { name: 'Franskpress', category: 'PUSH' as TrainingCategory },
+    { name: 'Overhead Triceps Extension', category: 'PUSH' as TrainingCategory },
     
-    // PULL
-    { name: 'Markløft', category: 'PULL' as TrainingCategory },
-    { name: 'Nedtrekk', category: 'PULL' as TrainingCategory },
-    { name: 'Stående Roing', category: 'PULL' as TrainingCategory },
+    // PULL (Rygg, Biceps, Bakside Skulder)
+    { name: 'Markløft (Konvensjonell)', category: 'PULL' as TrainingCategory },
+    { name: 'Markløft (Sumo)', category: 'PULL' as TrainingCategory },
+    { name: 'Chins / Pull-ups', category: 'PULL' as TrainingCategory },
+    { name: 'Nedtrekk (Bredt grep)', category: 'PULL' as TrainingCategory },
+    { name: 'Nedtrekk (Smalgrep)', category: 'PULL' as TrainingCategory },
+    { name: 'Sittende Roing (Kabel)', category: 'PULL' as TrainingCategory },
+    { name: 'Stående Roing (Stang)', category: 'PULL' as TrainingCategory },
+    { name: 'Ett-arms Roing (Manual)', category: 'PULL' as TrainingCategory },
+    { name: 'T-Bar Row', category: 'PULL' as TrainingCategory },
     { name: 'Face Pulls', category: 'PULL' as TrainingCategory },
-    { name: 'Biceps Curl', category: 'PULL' as TrainingCategory },
+    { name: 'Reverse Flyes (Manualer)', category: 'PULL' as TrainingCategory },
+    { name: 'Biceps Curl (Stang)', category: 'PULL' as TrainingCategory },
+    { name: 'Biceps Curl (Manualer)', category: 'PULL' as TrainingCategory },
+    { name: 'Hammer Curl', category: 'PULL' as TrainingCategory },
+    { name: 'Preacher Curl', category: 'PULL' as TrainingCategory },
+    { name: 'Concentration Curl', category: 'PULL' as TrainingCategory },
+    { name: 'Lat Pullover (Kabel)', category: 'PULL' as TrainingCategory },
     
-    // LEGS
-    { name: 'Knebøy', category: 'LEGS' as TrainingCategory },
+    // LEGS (Bein, Rumpe, Legger)
+    { name: 'Knebøy (High Bar)', category: 'LEGS' as TrainingCategory },
+    { name: 'Knebøy (Low Bar)', category: 'LEGS' as TrainingCategory },
+    { name: 'Frontbøy', category: 'LEGS' as TrainingCategory },
+    { name: 'Goblet Squat', category: 'LEGS' as TrainingCategory },
     { name: 'Beinpress', category: 'LEGS' as TrainingCategory },
-    { name: 'Utfall', category: 'LEGS' as TrainingCategory },
+    { name: 'Hack Squat', category: 'LEGS' as TrainingCategory },
+    { name: 'Utfall (Gående)', category: 'LEGS' as TrainingCategory },
+    { name: 'Bulgarsk Utfall', category: 'LEGS' as TrainingCategory },
+    { name: 'Rumensk Markløft', category: 'LEGS' as TrainingCategory },
     { name: 'Leg Extension', category: 'LEGS' as TrainingCategory },
-    { name: 'Hamstring Curl', category: 'LEGS' as TrainingCategory },
-    { name: 'Tåhev', category: 'LEGS' as TrainingCategory }
+    { name: 'Hamstring Curl (Liggende)', category: 'LEGS' as TrainingCategory },
+    { name: 'Hamstring Curl (Sittende)', category: 'LEGS' as TrainingCategory },
+    { name: 'Hip Thrust', category: 'LEGS' as TrainingCategory },
+    { name: 'Glute Bridge', category: 'LEGS' as TrainingCategory },
+    { name: 'Abductor (Maskin)', category: 'LEGS' as TrainingCategory },
+    { name: 'Adductor (Maskin)', category: 'LEGS' as TrainingCategory },
+    { name: 'Stående Tåhev', category: 'LEGS' as TrainingCategory },
+    { name: 'Sittende Tåhev', category: 'LEGS' as TrainingCategory }
   ]
 
   for (const ex of globalExercises) {

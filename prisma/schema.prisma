@@ -22,11 +22,17 @@ enum UserGoal {
   BULK
 }
 
+enum Language {
+  NB
+  EN
+}
+
 model User {
   id                String           @id @default(uuid())
   email             String           @unique
   display_name      String?          @default("Pilot")
   theme_color       String?          @default("#00FF41")
+  language          Language         @default(NB)
   weight            Float?
   protein_goal      Int?             @default(0)
   calorie_goal      Int?             @default(2500)

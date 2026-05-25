@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { updateSettings } from '@/app/(dashboard)/settings/actions'
-import { UserGoal } from '@prisma/client'
+import { UserGoal, Language } from '@prisma/client'
 
 interface SettingsFormProps {
   initialData: {
@@ -11,6 +11,7 @@ interface SettingsFormProps {
     calorie_goal: number | null
     goal: UserGoal
     weight: number | null
+    language: Language
   }
 }
 
@@ -28,11 +29,17 @@ const GOALS: { value: UserGoal; label: string; desc: string; offset: number }[] 
   { value: 'CUT', label: 'DEFF', desc: 'Fettforbrenning', offset: -500 },
 ]
 
+const LANGUAGES: { value: Language; label: string; flag: string }[] = [
+  { value: 'NB', label: 'NORSK', flag: '🇳🇴' },
+  { value: 'EN', label: 'ENGLISH', flag: '🇬🇧' },
+]
+
 export default function SettingsForm({ initialData }: SettingsFormProps) {
   const [displayName, setDisplayName] = useState(initialData.display_name || 'Pilot')
   const [themeColor, setThemeColor] = useState(initialData.theme_color || '#00FF41')
   const [calorieGoal, setCalorieGoal] = useState(initialData.calorie_goal?.toString() || '2500')
   const [goal, setGoal] = useState<UserGoal>(initialData.goal)
+  const [language, setLanguage] = useState<Language>(initialData.language)
   
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -63,7 +70,8 @@ export default function SettingsForm({ initialData }: SettingsFormProps) {
       display_name: displayName, 
       theme_color: themeColor,
       calorie_goal: parseInt(calorieGoal),
-      goal
+      goal,
+      language
     })
     
     if (res.success) {
@@ -153,6 +161,28 @@ export default function SettingsForm({ initialData }: SettingsFormProps) {
         </div>
       </section>
 
+      {/* Språk Seksjon */}
+      <section className="space-y-6">
+        <h3 className="font-mono text-[10px] text-zinc-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">System_Språk</h3>
+        <div className="grid grid-cols-2 gap-3" role="radiogroup">
+          {LANGUAGES.map((lang) => (
+            <button
+              key={lang.value}
+              type="button"
+              onClick={() => setLanguage(lang.value)}
+              className={`flex items-center gap-3 rounded-xl p-4 transition-all ring-1 ${
+                language === lang.value 
+                  ? 'bg-white/10 ring-white/30 shadow-lg' 
+                  : 'bg-white/5 ring-white/10 hover:bg-white/10'
+              }`}
+            >
+              <span className="text-xl">{lang.flag}</span>
+              <span className={`font-mono text-xs font-bold ${language === lang.value ? 'text-white' : 'text-zinc-500'}`}>{lang.label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       {/* Utseende Seksjon */}
       <section className="space-y-6">
         <h3 className="font-mono text-[10px] text-zinc-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">Cockpit_Estetikk</h3>
@@ -184,7 +214,7 @@ export default function SettingsForm({ initialData }: SettingsFormProps) {
       <div className="p-6 rounded-2xl bg-white/5 border border-white/10 space-y-4">
          <h3 className="font-mono text-[10px] text-zinc-500 uppercase">Forhåndsvisning</h3>
          <div className="space-y-2">
-            <p className="font-mono text-xs uppercase" style={{ color: themeColor }}>Status: {goal} ENABLED</p>
+            <p className="font-mono text-xs uppercase" style={{ color: themeColor }}>Status: {goal} ENABLED ({language})</p>
             <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
                <div className="h-full w-[65%] transition-all" style={{ backgroundColor: themeColor, boxShadow: `0 0 10px ${themeColor}66` }} />
             </div>

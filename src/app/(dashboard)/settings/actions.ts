@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { UserGoal } from '@prisma/client'
+import { UserGoal, Language } from '@prisma/client'
 
 export async function getUserSettings() {
   const supabase = await createClient()
@@ -18,6 +18,7 @@ export async function getUserSettings() {
       theme_color: true,
       calorie_goal: true,
       goal: true,
+      language: true,
     }
   })
 
@@ -28,7 +29,8 @@ export async function updateSettings(data: {
   display_name: string, 
   theme_color: string,
   calorie_goal: number,
-  goal: UserGoal
+  goal: UserGoal,
+  language: Language
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -43,6 +45,7 @@ export async function updateSettings(data: {
         theme_color: data.theme_color,
         calorie_goal: data.calorie_goal,
         goal: data.goal,
+        language: data.language,
       }
     })
 
