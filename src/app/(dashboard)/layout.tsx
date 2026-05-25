@@ -45,7 +45,9 @@ export default async function DashboardLayout({
           email: user.email,
           subscription_tier: 'PREMIUM',
           display_name: 'Pilot',
-          theme_color: '#00FF41'
+          theme_color: '#00FF41',
+          calorie_goal: 2500,
+          goal: 'MAINTAIN'
         }
       })
     }
@@ -56,7 +58,9 @@ export default async function DashboardLayout({
        display_name: 'Pilot (SIM)',
        theme_color: '#00FF41',
        weight: 85,
-       protein_goal: 180
+       protein_goal: 180,
+       calorie_goal: 2500,
+       goal: 'MAINTAIN'
     }
   }
 
@@ -83,7 +87,12 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen flex-col bg-[#0A0A0B] font-sans text-white">
       <HydrateCockpit 
-        baseline={{ weight: dbUser?.weight ?? 85, proteinGoal: dbUser?.protein_goal ?? 180 }}
+        baseline={{ 
+          weight: dbUser?.weight ?? 85, 
+          proteinGoal: dbUser?.protein_goal ?? 180,
+          calorieGoal: dbUser?.calorie_goal ?? 2500,
+          goal: dbUser?.goal ?? 'MAINTAIN'
+        }}
         dailyTotals={dailyTotalsData}
         recentWorkouts={recentWorkouts}
       />

@@ -179,7 +179,7 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
             <option value="BREAKFAST">Frokost</option>
             <option value="LUNCH">Lunsj</option>
             <option value="DINNER">Middag</option>
-            <option value="SNACK">Snack</option>
+            <option value="SNACK">Mellommåltid</option>
           </select>
         </div>
         <div className="space-y-2">

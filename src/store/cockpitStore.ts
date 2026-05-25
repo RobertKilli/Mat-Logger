@@ -29,6 +29,8 @@ interface DailyFoodLog {
 interface CockpitState {
   weight: number | null
   proteinGoal: number
+  calorieGoal: number
+  goal: 'CUT' | 'MAINTAIN' | 'BULK'
   dailyConsumedProtein: number
   dailyConsumedCarbs: number
   dailyConsumedFat: number
@@ -45,7 +47,7 @@ interface CockpitState {
   isSyncing: boolean
   syncError: string | null
   
-  setBaseline: (weight: number | null, proteinGoal: number) => void
+  setBaseline: (data: { weight: number | null, proteinGoal: number, calorieGoal?: number, goal?: 'CUT' | 'MAINTAIN' | 'BULK' }) => void
   setDailyTotals: (totals: {
     protein: number
     carbs: number
@@ -69,6 +71,8 @@ export const useCockpitStore = create<CockpitState>()(
     (set, get) => ({
       weight: null,
       proteinGoal: 0,
+      calorieGoal: 2500,
+      goal: 'MAINTAIN',
       dailyConsumedProtein: 0,
       dailyConsumedCarbs: 0,
       dailyConsumedFat: 0,
@@ -85,8 +89,13 @@ export const useCockpitStore = create<CockpitState>()(
       isSyncing: false,
       syncError: null,
       
-      setBaseline: (weight, proteinGoal) => {
-        set({ weight, proteinGoal })
+      setBaseline: (data) => {
+        set({ 
+          weight: data.weight, 
+          proteinGoal: data.proteinGoal,
+          calorieGoal: data.calorieGoal ?? get().calorieGoal,
+          goal: data.goal ?? get().goal
+        })
         get().updateMetabolicState()
       },
       setDailyTotals: (totals) => {
@@ -178,6 +187,8 @@ export const useCockpitStore = create<CockpitState>()(
       partialize: (state) => ({
         weight: state.weight,
         proteinGoal: state.proteinGoal,
+        calorieGoal: state.calorieGoal,
+        goal: state.goal,
         dailyConsumedProtein: state.dailyConsumedProtein,
         dailyConsumedCarbs: state.dailyConsumedCarbs,
         dailyConsumedFat: state.dailyConsumedFat,

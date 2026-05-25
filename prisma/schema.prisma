@@ -16,6 +16,12 @@ enum SubscriptionTier {
   PREMIUM
 }
 
+enum UserGoal {
+  CUT
+  MAINTAIN
+  BULK
+}
+
 model User {
   id                String           @id @default(uuid())
   email             String           @unique
@@ -23,6 +29,8 @@ model User {
   theme_color       String?          @default("#00FF41")
   weight            Float?
   protein_goal      Int?             @default(0)
+  calorie_goal      Int?             @default(2500)
+  goal              UserGoal         @default(MAINTAIN)
   subscription_tier SubscriptionTier @default(FREE)
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt
