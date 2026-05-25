@@ -27,6 +27,12 @@ export async function getUnifiedHistory() {
     const [workouts, foodLogs] = await Promise.all([
       prisma.workoutLog.findMany({
         where: { user_id: authUser.id },
+        include: {
+          workout_exercises: {
+            include: { exercise: true },
+            orderBy: { order: 'asc' }
+          }
+        },
         orderBy: { logged_at: 'desc' },
       }),
       prisma.foodLog.findMany({

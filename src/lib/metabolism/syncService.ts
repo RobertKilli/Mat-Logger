@@ -1,6 +1,6 @@
 import { useCockpitStore } from '@/store/cockpitStore'
 import { logFoodEntry } from '@/app/(dashboard)/quick-log/actions'
-import { logWorkout } from '@/app/(dashboard)/training/actions'
+import { logWorkout, logWorkoutExtended } from '@/app/(dashboard)/training/actions'
 import { calculateNutrition } from '@/lib/metabolism/nutrition'
 
 const MAX_QUEUE_SIZE = 50
@@ -50,11 +50,15 @@ export async function executeLogAction(
         payload.notes
       )
     } else {
-      const formData = new FormData()
-      formData.append('category', payload.category)
-      formData.append('duration', payload.duration.toString())
-      formData.append('intensity', payload.intensity.toString())
-      result = await logWorkout(formData)
+      if (payload.exercises) {
+        result = await logWorkoutExtended(payload as any)
+      } else {
+        const formData = new FormData()
+        formData.append('category', payload.category)
+        formData.append('duration', payload.duration.toString())
+        formData.append('intensity', payload.intensity.toString())
+        result = await logWorkout(formData)
+      }
     }
 
     if (result?.error) {
@@ -101,11 +105,15 @@ export async function processSyncQueue() {
           action.payload.notes
         )
       } else if (action.type === 'TRAINING') {
-        const formData = new FormData()
-        formData.append('category', action.payload.category)
-        formData.append('duration', action.payload.duration.toString())
-        formData.append('intensity', action.payload.intensity.toString())
-        result = await logWorkout(formData)
+        if (action.payload.exercises) {
+          result = await logWorkoutExtended(action.payload as any)
+        } else {
+          const formData = new FormData()
+          formData.append('category', action.payload.category)
+          formData.append('duration', action.payload.duration.toString())
+          formData.append('intensity', action.payload.intensity.toString())
+          result = await logWorkout(formData)
+        }
       }
 
       if (result?.success) {

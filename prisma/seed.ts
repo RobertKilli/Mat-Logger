@@ -1,4 +1,4 @@
-import { PrismaClient, FoodCategory, BaseUnit } from '@prisma/client'
+import { PrismaClient, FoodCategory, BaseUnit, TrainingCategory } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -101,6 +101,40 @@ async function main() {
         caloriesPer100g: item.caloriesPer100g,
       },
       create: item,
+    })
+  }
+
+  console.log('Seeding global exercises...')
+
+  const globalExercises = [
+    // PUSH
+    { name: 'Benkpress', category: 'PUSH' as TrainingCategory },
+    { name: 'Militærpress', category: 'PUSH' as TrainingCategory },
+    { name: 'Dips', category: 'PUSH' as TrainingCategory },
+    { name: 'Sidehev', category: 'PUSH' as TrainingCategory },
+    { name: 'Triceps Pushdown', category: 'PUSH' as TrainingCategory },
+    
+    // PULL
+    { name: 'Markløft', category: 'PULL' as TrainingCategory },
+    { name: 'Nedtrekk', category: 'PULL' as TrainingCategory },
+    { name: 'Stående Roing', category: 'PULL' as TrainingCategory },
+    { name: 'Face Pulls', category: 'PULL' as TrainingCategory },
+    { name: 'Biceps Curl', category: 'PULL' as TrainingCategory },
+    
+    // LEGS
+    { name: 'Knebøy', category: 'LEGS' as TrainingCategory },
+    { name: 'Beinpress', category: 'LEGS' as TrainingCategory },
+    { name: 'Utfall', category: 'LEGS' as TrainingCategory },
+    { name: 'Leg Extension', category: 'LEGS' as TrainingCategory },
+    { name: 'Hamstring Curl', category: 'LEGS' as TrainingCategory },
+    { name: 'Tåhev', category: 'LEGS' as TrainingCategory }
+  ]
+
+  for (const ex of globalExercises) {
+    await prisma.exercise.upsert({
+      where: { name: ex.name },
+      update: { category: ex.category },
+      create: ex
     })
   }
 

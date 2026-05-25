@@ -12,6 +12,13 @@ interface UnifiedHistoryProps {
       duration_minutes: number
       intensity: number
       logged_at: Date
+      workout_exercises?: {
+        id: string
+        sets: number
+        reps: number
+        weight: number | null
+        exercise: { name: string }
+      }[]
     }[]
     food: {
       protein: number
@@ -102,23 +109,38 @@ export default function UnifiedHistory({ history, proteinGoal }: UnifiedHistoryP
               <div className="rounded-2xl bg-[#141416] p-6 ring-1 ring-white/10 shadow-lg">
                 <h3 className="font-mono text-[10px] uppercase text-zinc-500 mb-4 tracking-widest">Misjons-Logger</h3>
                 {day.workouts.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {day.workouts.map((w) => (
-                      <div key={w.id} className="flex items-center justify-between bg-white/5 rounded-lg p-3 ring-1 ring-white/5">
-                        <div>
-                          <p className="font-mono text-[10px] font-bold text-[#00FF41]">{w.category}</p>
-                          <p className="text-[9px] text-zinc-600">{format(new Date(w.logged_at), 'HH:mm')}</p>
+                      <div key={w.id} className="bg-white/5 rounded-lg overflow-hidden ring-1 ring-white/5">
+                        <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/[0.02]">
+                          <div>
+                            <p className="font-mono text-[10px] font-bold text-[#00FF41]">{w.category}</p>
+                            <p className="text-[9px] text-zinc-600">{format(new Date(w.logged_at), 'HH:mm')}</p>
+                          </div>
+                          <div className="flex gap-4 text-right">
+                             <div>
+                                <p className="font-mono text-xs font-bold text-white">{w.duration_minutes}</p>
+                                <p className="text-[7px] text-zinc-600 uppercase">Min</p>
+                             </div>
+                             <div>
+                                <p className="font-mono text-xs font-bold text-white">{w.intensity}/10</p>
+                                <p className="text-[7px] text-zinc-600 uppercase">Load</p>
+                             </div>
+                          </div>
                         </div>
-                        <div className="flex gap-4 text-right">
-                           <div>
-                              <p className="font-mono text-xs font-bold text-white">{w.duration_minutes}</p>
-                              <p className="text-[7px] text-zinc-600 uppercase">Min</p>
-                           </div>
-                           <div>
-                              <p className="font-mono text-xs font-bold text-white">{w.intensity}/10</p>
-                              <p className="text-[7px] text-zinc-600 uppercase">Load</p>
-                           </div>
-                        </div>
+                        
+                        {w.workout_exercises && w.workout_exercises.length > 0 && (
+                          <div className="p-3 space-y-2">
+                            {w.workout_exercises.map((ex) => (
+                              <div key={ex.id} className="flex justify-between items-center text-[10px]">
+                                <span className="font-bold text-zinc-300">{ex.exercise.name}</span>
+                                <span className="font-mono text-zinc-500">
+                                  {ex.sets}x{ex.reps} {ex.weight && `• ${ex.weight}kg`}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

@@ -7,6 +7,66 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { TrainingCategory } from '@prisma/client'
 
+export async function getExercisesByCategory(category: TrainingCategory) {
+  try {
+    const exercises = await prisma.exercise.findMany({
+      where: { category },
+      orderBy: { name: 'asc' }
+    })
+    return { data: exercises }
+  } catch (e) {
+    return { error: 'Failed to fetch exercises', data: [] }
+  }
+}
+
+export async function logWorkoutExtended(data: {
+  category: TrainingCategory
+  duration: number
+  intensity: number
+  exercises: {
+    exerciseId: string
+    sets: number
+    reps: number
+    weight?: number
+    notes?: string
+  }[]
+}) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'Unauthorized' }
+
+    const { versionId } = await MetabolicMotor.getContext()
+
+    const workout = await prisma.workoutLog.create({
+      data: {
+        user_id: user.id,
+        category: data.category,
+        duration_minutes: data.duration,
+        intensity: data.intensity,
+        model_version_id: versionId,
+        workout_exercises: {
+          create: data.exercises.map((ex, index) => ({
+            exercise_id: ex.exerciseId,
+            sets: ex.sets,
+            reps: ex.reps,
+            weight: ex.weight,
+            notes: ex.notes,
+            order: index
+          }))
+        }
+      }
+    })
+
+    revalidatePath('/')
+    return { success: true, workoutId: workout.id }
+  } catch (e) {
+    console.error('Extended workout log error:', e)
+    return { error: 'Failed to record session' }
+  }
+}
+
 export async function logWorkout(formData: FormData) {
   try {
     const supabase = await createClient()
