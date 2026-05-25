@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { updateSettings } from '@/app/(dashboard)/settings/actions'
 import { UserGoal } from '@prisma/client'
 
@@ -10,6 +10,7 @@ interface SettingsFormProps {
     theme_color: string | null
     calorie_goal: number | null
     goal: UserGoal
+    weight: number | null
   }
 }
 
@@ -21,10 +22,10 @@ const PRESET_COLORS = [
   { name: 'Alert Red', value: '#FF0000' },
 ]
 
-const GOALS: { value: UserGoal; label: string; desc: string }[] = [
-  { value: 'BULK', label: 'BULK', desc: 'Muskelvekst / Overskudd' },
-  { value: 'MAINTAIN', label: 'VEDLIKEHOLD', desc: 'Stabil vekt' },
-  { value: 'CUT', label: 'DEFF', desc: 'Fettforbrenning / Underskudd' },
+const GOALS: { value: UserGoal; label: string; desc: string; offset: number }[] = [
+  { value: 'BULK', label: 'BULK', desc: 'Muskelvekst', offset: 500 },
+  { value: 'MAINTAIN', label: 'VEDLIKEHOLD', desc: 'Stabil vekt', offset: 0 },
+  { value: 'CUT', label: 'DEFF', desc: 'Fettforbrenning', offset: -500 },
 ]
 
 export default function SettingsForm({ initialData }: SettingsFormProps) {
@@ -35,6 +36,23 @@ export default function SettingsForm({ initialData }: SettingsFormProps) {
   
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+
+  // Automatisk beregning basert på vekt og mål
+  const calculateRecommended = (selectedGoal: UserGoal) => {
+    if (!initialData.weight) return null
+    const maintenance = Math.round(initialData.weight * 33) // Standard faktor
+    const offset = GOALS.find(g => g.value === selectedGoal)?.offset || 0
+    return maintenance + offset
+  }
+
+  const handleApplyRecommended = () => {
+    const recommended = calculateRecommended(goal)
+    if (recommended) {
+      setCalorieGoal(recommended.toString())
+      setMessage({ type: 'success', text: `Anbefalt nivå (${recommended} kcal) aktivert for ${goal}.` })
+      setTimeout(() => setMessage(null), 3000)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -55,6 +73,8 @@ export default function SettingsForm({ initialData }: SettingsFormProps) {
     }
     setLoading(false)
   }
+
+  const recommendedCal = calculateRecommended(goal)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-10">
@@ -100,15 +120,36 @@ export default function SettingsForm({ initialData }: SettingsFormProps) {
           </div>
         </div>
 
-        <div className="space-y-1 pt-2">
-          <label className="block text-[10px] font-mono uppercase text-zinc-500 tracking-widest text-center">Daglig Kalorigrense (KCAL)</label>
-          <input 
-            type="number"
-            value={calorieGoal}
-            onChange={(e) => setCalorieGoal(e.target.value)}
-            className="w-full bg-transparent border-0 text-center font-mono text-5xl font-bold text-white focus:ring-0"
-            placeholder="2500"
-          />
+        <div className="space-y-4 pt-2">
+          <div className="relative">
+            <label className="block text-[10px] font-mono uppercase text-zinc-500 tracking-widest text-center mb-2">Daglig Kalorigrense (KCAL)</label>
+            <input 
+              type="number"
+              value={calorieGoal}
+              onChange={(e) => setCalorieGoal(e.target.value)}
+              className="w-full bg-transparent border-0 text-center font-mono text-6xl font-bold text-white focus:ring-0"
+              placeholder="2500"
+            />
+          </div>
+
+          {initialData.weight ? (
+            <div className="flex flex-col items-center gap-3">
+              <p className="font-mono text-[9px] text-zinc-500 uppercase">
+                Basert på vekt ({initialData.weight}kg) anbefales: <span className="text-white font-bold">{recommendedCal} kcal</span>
+              </p>
+              <button
+                type="button"
+                onClick={handleApplyRecommended}
+                className="px-4 py-2 rounded-full bg-white/5 border border-white/10 font-mono text-[9px] font-bold text-[#00FF41] hover:bg-[#00FF41]/10 transition-all uppercase tracking-widest"
+              >
+                Bruk Anbefalt Verdi
+              </button>
+            </div>
+          ) : (
+            <p className="font-mono text-[8px] text-zinc-600 text-center uppercase">
+              Sett vekt i profilen for å få anbefalt mål
+            </p>
+          )}
         </div>
       </section>
 
@@ -147,7 +188,10 @@ export default function SettingsForm({ initialData }: SettingsFormProps) {
             <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
                <div className="h-full w-[65%] transition-all" style={{ backgroundColor: themeColor, boxShadow: `0 0 10px ${themeColor}66` }} />
             </div>
-            <p className="font-mono text-[8px] text-zinc-500 uppercase tracking-widest">Target: {calorieGoal} KCAL/DAY</p>
+            <div className="flex justify-between items-center mt-1">
+               <p className="font-mono text-[8px] text-zinc-500 uppercase tracking-widest">Target: {calorieGoal} KCAL/DAY</p>
+               <p className="font-mono text-[8px] text-zinc-600 uppercase">Diff: {parseInt(calorieGoal) - (recommendedCal || 0)} KCAL</p>
+            </div>
          </div>
       </div>
 

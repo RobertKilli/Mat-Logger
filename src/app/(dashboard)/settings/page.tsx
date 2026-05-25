@@ -17,6 +17,9 @@ export default async function SettingsPage() {
     select: {
       display_name: true,
       theme_color: true,
+      weight: true,
+      calorie_goal: true,
+      goal: true,
     }
   })
 
@@ -46,6 +49,9 @@ export default async function SettingsPage() {
               initialData={{
                 display_name: dbUser?.display_name ?? null,
                 theme_color: dbUser?.theme_color ?? null,
+                calorie_goal: dbUser?.calorie_goal ?? 2500,
+                goal: dbUser?.goal ?? 'MAINTAIN',
+                weight: dbUser?.weight ?? null,
               }}
             />
           </div>
