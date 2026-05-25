@@ -51,7 +51,7 @@ mat-logger/
 │   ├── store/                 # Zustand-tilstandshåndtering
 │   │   └── cockpitStore.ts    # Sentral tilstand for sanntidsmålere
 │   ├── types/                 # Delte TypeScript-grensesnitt
-│   └── middleware.ts          # Sikkerhet og RLS-håndtering
+│   └── proxy.ts               # Sikkerhet og RLS-håndtering
 ├── tests/                     # Integrasjons- og E2E-tester
 ├── .env.local                 # Lokale hemmeligheter (DB-strender)
 ├── next.config.js
