@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import DailySummary from '@/components/dashboard/DailySummary'
 import GlycogenClock from '@/components/dashboard/GlycogenClock'
 import CNSMeter from '@/components/dashboard/CNSMeter'
+import MealTimer from '@/components/dashboard/MealTimer'
 import DailyLogList from '@/components/dashboard/DailyLogList'
 import BiometricTelemetry from '@/components/dashboard/BiometricTelemetry'
 import MissionCommandCenter from '@/components/dashboard/MissionCommandCenter'
@@ -113,6 +114,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <div className="grid grid-cols-2 gap-4">
               <GlycogenClock />
               <CNSMeter />
+              <div className="col-span-2">
+                <MealTimer />
+              </div>
           </div>
           
           <BiometricTelemetry />

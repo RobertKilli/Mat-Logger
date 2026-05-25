@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getDailyTotals } from './actions'
 import HydrateCockpit from '@/components/dashboard/HydrateCockpit'
 import SyncStatus from '@/components/layout/SyncStatus'
+import NotificationManager from '@/components/dashboard/NotificationManager'
 import { subDays } from 'date-fns'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -96,6 +97,7 @@ export default async function DashboardLayout({
               </h1>
             </Link>
             <SyncStatus />
+            <NotificationManager />
             {dbStatus === 'OFFLINE' && (
                <div className="px-2 py-0.5 rounded bg-red-500/10 border border-red-500/20">
                   <p className="font-mono text-[7px] text-red-500 font-bold animate-pulse">DATABASE_OFFLINE_FAILSAFE_ACTIVE</p>

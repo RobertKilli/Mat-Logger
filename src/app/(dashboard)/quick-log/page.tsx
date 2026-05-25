@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import GramEntryForm from '@/components/forms/GramEntryForm'
+import QuickLogForm from '@/components/forms/QuickLogForm'
 import { prisma } from '@/lib/prisma'
 import { fetchExternalProduct } from '@/lib/metabolism/externalSearch'
 import Link from 'next/link'
@@ -58,7 +58,7 @@ export default async function QuickLogPage({
         </Link>
         
         <div className="rounded-3xl bg-[#141416] p-8 shadow-2xl ring-1 ring-white/10 sm:p-12">
-          <GramEntryForm foodItem={foodItem} onSuccess={() => redirect('/')} />
+          <QuickLogForm foodItem={foodItem} />
         </div>
       </div>
     </div>

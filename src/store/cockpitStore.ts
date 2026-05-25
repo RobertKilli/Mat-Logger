@@ -38,6 +38,8 @@ interface CockpitState {
   glycogenLevel: number // 0-100
   cnsFatigue: number // 0-100
   cnsRecoveryHours: number
+  lastMealTime: string | null
+  nextMealTime: string | null
   preview: PreviewData | null
   pendingSyncQueue: PendingAction[]
   isSyncing: boolean
@@ -76,6 +78,8 @@ export const useCockpitStore = create<CockpitState>()(
       glycogenLevel: 100,
       cnsFatigue: 0,
       cnsRecoveryHours: 0,
+      lastMealTime: null,
+      nextMealTime: null,
       preview: null,
       pendingSyncQueue: [],
       isSyncing: false,
@@ -130,7 +134,7 @@ export const useCockpitStore = create<CockpitState>()(
       setIsSyncing: (isSyncing) => set({ isSyncing }),
       setSyncError: (syncError) => set({ syncError }),
       updateMetabolicState: () => {
-        const { weight, dailyConsumedCarbs, recentWorkoutLogs } = get()
+        const { weight, dailyConsumedCarbs, recentWorkoutLogs, dailyFoodLogs } = get()
         
         // 1. Glycogen Update
         if (weight) {
@@ -146,6 +150,23 @@ export const useCockpitStore = create<CockpitState>()(
           set({ cnsFatigue: cns.percentage, cnsRecoveryHours: cns.recoveryTimeHours })
         } else {
           set({ cnsFatigue: 0, cnsRecoveryHours: 0 })
+        }
+
+        // 3. Meal Timing Update
+        if (dailyFoodLogs.length > 0) {
+          const sortedLogs = [...dailyFoodLogs].sort((a, b) => 
+            new Date(b.time).getTime() - new Date(a.time).getTime()
+          )
+          const lastMeal = sortedLogs[0]
+          const lastTime = new Date(lastMeal.time)
+          const nextTime = new Date(lastTime.getTime() + 4 * 60 * 60 * 1000) // 4 hours later
+          
+          set({ 
+            lastMealTime: lastTime.toISOString(),
+            nextMealTime: nextTime.toISOString()
+          })
+        } else {
+          set({ lastMealTime: null, nextMealTime: null })
         }
       },
       updateGlycogen: (level) => set({ glycogenLevel: level }),
@@ -165,6 +186,8 @@ export const useCockpitStore = create<CockpitState>()(
         glycogenLevel: state.glycogenLevel,
         cnsFatigue: state.cnsFatigue,
         cnsRecoveryHours: state.cnsRecoveryHours,
+        lastMealTime: state.lastMealTime,
+        nextMealTime: state.nextMealTime,
         pendingSyncQueue: state.pendingSyncQueue,
         recentWorkoutLogs: state.recentWorkoutLogs,
       }),
