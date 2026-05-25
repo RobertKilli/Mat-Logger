@@ -21,7 +21,10 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
 
   // Hydrate store on mount
   useEffect(() => {
-    setBaseline(initialData.weight, initialData.proteinGoal)
+    setBaseline({
+      weight: initialData.weight,
+      proteinGoal: initialData.proteinGoal
+    })
   }, [initialData, setBaseline])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -40,7 +43,10 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
     } else {
       const numericWeight = parseFloat(weight)
       const numericProtein = parseInt(proteinGoal)
-      setBaseline(numericWeight, numericProtein)
+      setBaseline({
+        weight: numericWeight,
+        proteinGoal: numericProtein
+      })
       setMessage({ type: 'success', text: 'Baseline updated successfully' })
     }
     setLoading(false)
