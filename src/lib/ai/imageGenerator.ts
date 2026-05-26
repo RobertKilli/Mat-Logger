@@ -20,7 +20,7 @@ export async function generateExerciseImage(exerciseName: string, category: stri
       quality: "standard",
     })
 
-    return response.data[0].url
+    return response.data?.[0]?.url ?? null
   } catch (error) {
     console.error('AI Image Generation Error:', error)
     return null
