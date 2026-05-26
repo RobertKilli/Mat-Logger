@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { getDailyTotals } from './actions'
 import { getLatestBiometrics } from './profile/garminActions'
 import { generateGuidance } from '@/lib/metabolism/guidance'
+import { generateAIGuidance } from '@/lib/ai/guidanceGenerator'
 import { format, addDays, subDays, isToday, parseISO } from 'date-fns'
 import { nb } from 'date-fns/locale'
 import { prisma, getSafePrisma } from '@/lib/prisma'
@@ -68,11 +69,20 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   }
   
   // 2. Generate AI Guidance (Mission Briefing)
-  const briefing = generateGuidance(
+  const ruleBasedBriefing = generateGuidance(
     biometrics,
     { ...dailyData, goal: dailyData.proteinGoal || 180 },
     recentWorkouts
   )
+
+  // Call GPT-4o for advanced mission analysis
+  const aiBriefing = isCurrentToday 
+    ? await generateAIGuidance(
+        biometrics,
+        { ...dailyData, goal: dailyData.proteinGoal || 180 },
+        recentWorkouts
+      )
+    : null
 
   const prevDate = format(subDays(currentDate, 1), 'yyyy-MM-dd')
   const nextDate = format(addDays(currentDate, 1), 'yyyy-MM-dd')
@@ -117,7 +127,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       {/* AI Mission Command Center */}
       {isCurrentToday && (
-        <MissionCommandCenter briefing={briefing} />
+        <MissionCommandCenter 
+          briefing={aiBriefing} 
+          fallbackBriefing={ruleBasedBriefing} 
+        />
       )}
 
       <section className="grid gap-8 md:grid-cols-2">
@@ -195,4 +208,3 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     </main>
   )
 }
-
