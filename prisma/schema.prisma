@@ -47,8 +47,35 @@ model User {
   integrations      Integration[]
   weight_logs       WeightLog[]
   workout_templates WorkoutTemplate[]
+  meal_templates    MealTemplate[]
 
   @@map("users")
+}
+
+model MealTemplate {
+  id         String             @id @default(uuid())
+  user_id    String
+  name       String
+  created_at DateTime           @default(now())
+  updated_at DateTime           @updatedAt
+  items      MealTemplateItem[]
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("meal_templates")
+}
+
+model MealTemplateItem {
+  id               String    @id @default(uuid())
+  meal_template_id String
+  food_item_id     String
+  inputMode        InputMode @default(GRAMS)
+  inputAmount      Float
+
+  meal_template MealTemplate @relation(fields: [meal_template_id], references: [id], onDelete: Cascade)
+  food_item     FoodItem     @relation(fields: [food_item_id], references: [id])
+
+  @@map("meal_template_items")
 }
 
 model WorkoutTemplate {
