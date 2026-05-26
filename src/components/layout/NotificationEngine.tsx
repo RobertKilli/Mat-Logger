@@ -52,7 +52,7 @@ export default function NotificationEngine() {
     return () => clearInterval(checkInterval)
   }, [nextMealTime, glycogenLevel, cnsFatigue, permission])
 
-  function sendNotification(title: string, options: NotificationOptions) {
+  function sendNotification(title: string, options: any) {
     if (!('serviceWorker' in navigator)) {
        new Notification(title, options)
        return
@@ -64,7 +64,7 @@ export default function NotificationEngine() {
         badge: '/file.svg',
         vibrate: [200, 100, 200],
         ...options
-      })
+      } as any)
     })
   }
 
