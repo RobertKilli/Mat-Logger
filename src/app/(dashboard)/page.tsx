@@ -176,7 +176,15 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             <h3 className="font-mono text-sm font-bold text-white">PILOT PROFIL</h3>
             <p className="text-xs text-zinc-500 mt-1 uppercase">Konfigurer baseline</p>
          </Link>
+         <Link 
+          href="/progress" 
+          className="flex-1 min-w-[200px] rounded-xl bg-[#00FF41]/5 p-6 ring-1 ring-[#00FF41]/20 hover:bg-[#00FF41]/10 transition-all group"
+         >
+            <h3 className="font-mono text-sm font-bold text-[#00FF41]">PROGRESJON</h3>
+            <p className="text-xs text-zinc-500 mt-1 uppercase">Analyser & Vektgraf</p>
+         </Link>
       </section>
     </main>
   )
 }
+

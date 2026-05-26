@@ -92,3 +92,97 @@ export async function deleteFoodLog(logId: string) {
     return { error: 'Kunne ikke slette loggføringen.' }
   }
 }
+
+export async function saveMealAsTemplate(name: string, items: { foodItemId: string, inputMode: InputMode, inputAmount: number }[]) {
+  const supabase = await createClient()
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    await prisma.mealTemplate.create({
+      data: {
+        user_id: user.id,
+        name,
+        items: {
+          create: items.map(item => ({
+            food_item_id: item.foodItemId,
+            inputMode: item.inputMode,
+            inputAmount: item.inputAmount
+          }))
+        }
+      }
+    })
+
+    revalidatePath('/library')
+    return { success: true }
+  } catch (e) {
+    console.error('Save meal template error:', e)
+    return { error: 'Kunne ikke lagre måltidsmal.' }
+  }
+}
+
+export async function getMealTemplates() {
+  const supabase = await createClient()
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { data: [] }
+
+    const templates = await prisma.mealTemplate.findMany({
+      where: { user_id: user.id },
+      include: {
+        items: {
+          include: { food_item: true }
+        }
+      },
+      orderBy: { updated_at: 'desc' }
+    })
+
+    return { data: templates }
+  } catch (e) {
+    console.error('Get meal templates error:', e)
+    return { error: 'Kunne ikke hente måltidsmaler.', data: [] }
+  }
+}
+
+export async function applyMealTemplate(templateId: string, mealType: MealType) {
+  const supabase = await createClient()
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    const template = await prisma.mealTemplate.findUnique({
+      where: { id: templateId, user_id: user.id },
+      include: { items: { include: { food_item: true } } }
+    })
+
+    if (!template) return { error: 'Mal ikke funnet.' }
+
+    const { versionId } = await MetabolicMotor.getContext()
+
+    // Log all items in the template
+    await Promise.all(template.items.map(item => {
+      const calculated = calculateNutrition(item.food_item, item.inputMode, item.inputAmount)
+      return prisma.foodLog.create({
+        data: {
+          user_id: user.id,
+          food_item_id: item.food_item_id,
+          model_version_id: versionId,
+          inputMode: item.inputMode,
+          inputAmount: item.inputAmount,
+          mealType,
+          calculatedGrams: calculated.calculatedGrams,
+          calculatedProtein: calculated.calculatedProtein,
+          calculatedCarbs: calculated.calculatedCarbs,
+          calculatedFat: calculated.calculatedFat,
+          calculatedCalories: calculated.calculatedCalories,
+        }
+      })
+    }))
+
+    revalidatePath('/')
+    return { success: true }
+  } catch (e) {
+    console.error('Apply meal template error:', e)
+    return { error: 'Kunne ikke logge måltid fra mal.' }
+  }
+}

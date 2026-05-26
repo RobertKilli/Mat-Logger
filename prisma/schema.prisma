@@ -28,37 +28,81 @@ enum Language {
 }
 
 model User {
-  id                String           @id @default(uuid())
-  email             String           @unique
-  display_name      String?          @default("Pilot")
-  theme_color       String?          @default("#00FF41")
-  language          Language         @default(NB)
+  id                String            @id @default(uuid())
+  email             String            @unique
+  display_name      String?           @default("Pilot")
+  theme_color       String?           @default("#00FF41")
+  language          Language          @default(NB)
   weight            Float?
-  protein_goal      Int?             @default(0)
-  calorie_goal      Int?             @default(2500)
-  goal              UserGoal         @default(MAINTAIN)
-  subscription_tier SubscriptionTier @default(FREE)
-  created_at        DateTime         @default(now())
-  updated_at        DateTime         @updatedAt
+  protein_goal      Int?              @default(0)
+  calorie_goal      Int?              @default(2500)
+  goal              UserGoal          @default(MAINTAIN)
+  subscription_tier SubscriptionTier  @default(FREE)
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
   food_logs         FoodLog[]
   workout_logs      WorkoutLog[]
   food_items        FoodItem[]
   biometric_logs    BiometricLog[]
   integrations      Integration[]
+  weight_logs       WeightLog[]
+  workout_templates WorkoutTemplate[]
 
   @@map("users")
 }
 
+model WorkoutTemplate {
+  id         String           @id @default(uuid())
+  user_id    String
+  name       String
+  category   TrainingCategory
+  created_at DateTime         @default(now())
+  updated_at DateTime         @updatedAt
+
+  user               User               @relation(fields: [user_id], references: [id])
+  template_exercises TemplateExercise[]
+
+  @@map("workout_templates")
+}
+
+model TemplateExercise {
+  id                  String @id @default(uuid())
+  workout_template_id String
+  exercise_id         String
+  sets                Int
+  reps                Int
+  weight              Float?
+  order               Int    @default(0)
+
+  workout_template WorkoutTemplate @relation(fields: [workout_template_id], references: [id], onDelete: Cascade)
+  exercise         Exercise        @relation(fields: [exercise_id], references: [id])
+
+  @@map("template_exercises")
+}
+
+model WeightLog {
+  id         String   @id @default(uuid())
+  user_id    String
+  weight     Float
+  logged_at  DateTime @default(now())
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, logged_at])
+  @@map("weight_logs")
+}
+
 model Integration {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   user_id       String
-  provider      String   // e.g. "GARMIN", "APPLE_HEALTH"
+  provider      String // e.g. "GARMIN", "APPLE_HEALTH"
   access_token  String
   refresh_token String?
   expires_at    DateTime?
   last_synced   DateTime?
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
 
   user User @relation(fields: [user_id], references: [id])
 
@@ -67,14 +111,14 @@ model Integration {
 }
 
 model BiometricLog {
-  id               String   @id @default(uuid())
-  user_id          String
-  type             String   // SLEEP_SCORE, RESTING_HR, STRESS_LEVEL, BODY_BATTERY
-  value            Float
-  unit             String?
-  source           String?  // e.g. "GARMIN_FENIX_7"
-  logged_at        DateTime @default(now())
-  created_at       DateTime @default(now())
+  id         String   @id @default(uuid())
+  user_id    String
+  type       String // SLEEP_SCORE, RESTING_HR, STRESS_LEVEL, BODY_BATTERY
+  value      Float
+  unit       String?
+  source     String? // e.g. "GARMIN_FENIX_7"
+  logged_at  DateTime @default(now())
+  created_at DateTime @default(now())
 
   user User @relation(fields: [user_id], references: [id])
 
@@ -111,33 +155,33 @@ enum BaseUnit {
 }
 
 model FoodItem {
-  id               String       @id @default(uuid())
-  user_id          String?      // Nullable for global items
-  name             String
-  brand            String?
-  source           String       @default("INTERNAL") // e.g., "INTERNAL", "Open Food Facts"
-  externalId       String?      // ID from source
-  barcode          String?
-  category         FoodCategory @default(OTHER)
-  image_url        String?
-  
+  id         String       @id @default(uuid())
+  user_id    String? // Nullable for global items
+  name       String
+  brand      String?
+  source     String       @default("INTERNAL") // e.g., "INTERNAL", "Open Food Facts"
+  externalId String? // ID from source
+  barcode    String?
+  category   FoodCategory @default(OTHER)
+  image_url  String?
+
   // Flexible logging fields
-  baseAmount       Float        @default(100)
-  baseUnit         BaseUnit     @default(GRAM)
-  gramsPerUnit     Float?       // Weight in grams for one unit (e.g. 60 for an egg)
-  
-  servingSize      Float?       // Weight in grams for one serving
-  servingUnit      String?      // Name of serving (e.g. "portion", "cup")
+  baseAmount   Float    @default(100)
+  baseUnit     BaseUnit @default(GRAM)
+  gramsPerUnit Float? // Weight in grams for one unit (e.g. 60 for an egg)
+
+  servingSize Float? // Weight in grams for one serving
+  servingUnit String? // Name of serving (e.g. "portion", "cup")
 
   // Nutrients (usually per 100g or per baseAmount)
-  proteinPer100g   Float
-  carbsPer100g     Float
-  fatPer100g       Float
-  caloriesPer100g  Float
-  
-  created_at       DateTime     @default(now())
-  updated_at       DateTime     @updatedAt
-  food_logs        FoodLog[]
+  proteinPer100g  Float
+  carbsPer100g    Float
+  fatPer100g      Float
+  caloriesPer100g Float
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  food_logs  FoodLog[]
 
   user User? @relation(fields: [user_id], references: [id])
 
@@ -160,28 +204,28 @@ enum MealType {
 }
 
 model FoodLog {
-  id                 String    @id @default(uuid())
-  user_id            String
-  food_item_id       String
-  model_version_id   String
-  
+  id               String @id @default(uuid())
+  user_id          String
+  food_item_id     String
+  model_version_id String
+
   // Logging inputs
-  inputMode          InputMode @default(GRAMS)
-  inputAmount        Float
-  
+  inputMode   InputMode @default(GRAMS)
+  inputAmount Float
+
   // Calculated actuals
   calculatedGrams    Float
   calculatedProtein  Float
   calculatedCarbs    Float
   calculatedFat      Float
   calculatedCalories Float
-  
-  mealType           MealType?
-  notes              String?
-  
-  logged_at          DateTime  @default(now())
-  created_at         DateTime  @default(now())
-  updated_at         DateTime  @updatedAt
+
+  mealType MealType?
+  notes    String?
+
+  logged_at  DateTime @default(now())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   user          User         @relation(fields: [user_id], references: [id])
   food_item     FoodItem     @relation(fields: [food_item_id], references: [id])
@@ -197,15 +241,16 @@ enum TrainingCategory {
 }
 
 model Exercise {
-  id               String           @id @default(uuid())
-  name             String           @unique
-  category         TrainingCategory
-  description      String?
-  instructions     String?
-  image_url        String?
-  created_at       DateTime         @default(now())
-  updated_at       DateTime         @updatedAt
+  id                String             @id @default(uuid())
+  name              String             @unique
+  category          TrainingCategory
+  description       String?
+  instructions      String?
+  image_url         String?
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
   workout_exercises WorkoutExercise[]
+  templateExercises TemplateExercise[]
 
   @@map("exercises")
 }
@@ -230,14 +275,14 @@ model WorkoutLog {
 }
 
 model WorkoutExercise {
-  id             String     @id @default(uuid())
+  id             String  @id @default(uuid())
   workout_log_id String
   exercise_id    String
   sets           Int
   reps           Int
   weight         Float?
   notes          String?
-  order          Int        @default(0)
+  order          Int     @default(0)
 
   workout_log WorkoutLog @relation(fields: [workout_log_id], references: [id], onDelete: Cascade)
   exercise    Exercise   @relation(fields: [exercise_id], references: [id])

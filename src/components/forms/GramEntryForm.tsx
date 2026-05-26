@@ -39,8 +39,35 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
   const inputRef = useRef<HTMLInputElement>(null)
   const isOnline = useOnlineStatus()
   const setPreview = useCockpitStore((state) => state.setPreview)
+  const addToMealBuilder = useCockpitStore((state) => state.addToMealBuilder)
 
   const numericValue = parseFloat(inputValue) || 0
+
+  async function handleAddToBuilder() {
+    if (numericValue <= 0) return
+    
+    addToMealBuilder({
+      id: Math.random().toString(36).substr(2, 9),
+      foodItem: {
+        id: foodItem.id,
+        name: foodItem.name,
+        proteinPer100g: foodItem.proteinPer100g,
+        carbsPer100g: foodItem.carbsPer100g,
+        fatPer100g: foodItem.fatPer100g,
+        caloriesPer100g: foodItem.caloriesPer100g,
+        baseAmount: foodItem.baseAmount,
+        baseUnit: foodItem.baseUnit,
+        gramsPerUnit: foodItem.gramsPerUnit,
+        servingSize: foodItem.servingSize,
+        servingUnit: foodItem.servingUnit
+      },
+      inputMode,
+      inputAmount: numericValue
+    })
+    
+    setStatusMessage({ type: 'success', text: 'Lagt til i bygger.' })
+    setTimeout(() => setStatusMessage(null), 2000)
+  }
   
   const calculated = useMemo(() => {
     try {
@@ -213,13 +240,23 @@ export default function GramEntryForm({ foodItem, onSuccess }: GramEntryFormProp
         </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={isSubmitting || numericValue <= 0}
-        className="w-full rounded-xl bg-[#00FF41] py-5 text-xl font-bold text-black transition-all hover:bg-[#00FF41]/90 disabled:opacity-30"
-      >
-        {isSubmitting ? 'OVERFØRER...' : 'LOGGFØR'}
-      </button>
+      <div className="grid grid-cols-2 gap-4">
+        <button
+          type="button"
+          onClick={handleAddToBuilder}
+          disabled={isSubmitting || numericValue <= 0}
+          className="rounded-xl bg-white/5 border border-white/10 py-5 text-xs font-mono font-bold text-zinc-500 hover:text-[#00FF41] hover:bg-[#00FF41]/5 transition-all uppercase tracking-widest"
+        >
+          + i Bygger
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting || numericValue <= 0}
+          className="rounded-xl bg-[#00FF41] py-5 text-xl font-bold text-black transition-all hover:bg-[#00FF41]/90 disabled:opacity-30 shadow-lg"
+        >
+          {isSubmitting ? 'OVERFØRER...' : 'LOGGFØR NÅ'}
+        </button>
+      </div>
 
       {statusMessage && (
         <p className={`text-center font-mono text-xs uppercase ${statusMessage.type === 'error' ? 'text-red-500' : 'text-[#00FF41]'}`}>

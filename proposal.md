@@ -1,70 +1,49 @@
-# Proposal: Daily Nutrition & Training Logger
+# Mat-Logger Upgrade Plan (Status: Phase 1 Active)
 
-Jeg ønsker å bygge en enkel app for å loggføre daglig næringsinntak og treningsøkter.
+## Project Goal
+Mat-Logger skal oppgraderes fra en enkel mat- og treningslogger til en mer komplett fitness-app for styrketrening, makrotracking og progresjon.
 
-## Hovedmål
+---
 
-Appen skal hjelpe meg med å følge med på:
+## Current Status (v1.2)
+- [x] **Full i18n Core:** Infrastruktur for Norsk/Engelsk på plass med `useI18n` hook.
+- [x] **Progress Center:** Vekt-grafer og historisk vektlogging operative.
+- [x] **Extended Training:** Støtte for øvelser, sett, reps og vekt i PPL-logger.
+- [x] **Goal Management:** Bulk/Deff-strategier med automatiske kaloriforslag.
+- [x] **Meal Templates:** Lagre og logg faste måltidskombinasjoner (v1.2).
 
-- Matinntak per dag
-- Mengde mat oppgitt i gram
-- Protein
-- Karbohydrater
-- Fett
-- Kalorier
-- Totale kalorier for dagen
-- Treningsøkter kategorisert som:
-  - Push
-  - Pull
-  - Legs
+---
 
-## Funksjoner
+## Main Roadmap
 
-### 1. Daglig matlogging
+### 1. Nutrition Logging (MacroFactor-style)
+- [x] **Måltids-templates:** Grupper matvarer til faste måltider (f.eks. "Standard Shake") for raskere logging.
+- [ ] **Skanne strekkoder:** Utnytte Open Food Facts' strekkode-støtte.
+- [ ] **Recent Items:** Smart-liste med de 10 mest brukte matvarene per måltidstype.
 
-Brukeren skal kunne legge inn matvarer med:
+### 2. Workout Logging (Hevy-style)
+- [ ] **Trenings-rutiner:** Lagre faste økter (f.eks. "Mandag Push") som maler.
+- [ ] **AI-Demo Generator:** Automatisk generering av teknikk-bilder for biblioteket.
+- [ ] **Volume Tracking:** Automatisk kalkulering av totalt volum per økt.
+- [ ] **1RM Estimates:** Beregne estimert styrkeutvikling i grafene.
 
-- Navn på matvare
-- Mengde i gram
-- Protein per 100g
-- Karbohydrater per 100g
-- Fett per 100g
-- Kalorier per 100g
+### 3. Visual & Analytics Center
+- [ ] **Styrke-grafer:** Visualisering av 1RM og volum over tid.
+- [ ] **Consistency Score:** Oversikt over dager man har truffet makro-målene.
+- [ ] **Photo Log:** Mulighet til å laste opp dagsform-bilder til progresjonsfanen.
 
-Appen skal automatisk regne ut næringsinnhold basert på gram.
+---
 
-Eksempel:
+## Tech Stack Expansion
+- **i18n:** `src/lib/i18n` (Custom implementation)
+- **Charts:** SVG-Native (MVP) -> Moving to `Recharts` for complexity.
+- **AI:** OpenAI DALL-E API (Planlagt for øvelsesbilder).
 
-Hvis jeg legger inn:
+---
 
-- Kyllingfilet
-- 200 gram
-- 23g protein per 100g
-- 0g karbs per 100g
-- 2g fett per 100g
-- 110 kcal per 100g
+## Core Positioning
+Mat-Logger skal være en fitness-first nutrition and workout tracker for folk som trener styrke.
 
-Skal appen regne ut:
-
-- 46g protein
-- 0g karbs
-- 4g fett
-- 220 kcal
-
-### 2. Daglig total
-
-Appen skal vise totalsum for dagen:
-
-- Total protein
-- Total karbohydrater
-- Total fett
-- Total kalorier
-
-Eksempelvis:
-
-```text
-Dagens total:
-Protein: 185g
-Karbohydrater: 260g
-Fett: 75g
-Kalorier: 2450 kcal
+Kort pitch:
+> Mat-Logger er en mat- og treningsdagbok for deg som trener styrke.  
+> Logg mat i gram, antall eller porsjoner, følg makroene dine, loggfør Push/Pull/Legs-økter og få visuelle øvelsesdemoer med AI-genererte instruktører.

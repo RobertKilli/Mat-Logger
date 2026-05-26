@@ -8,7 +8,8 @@ import NotificationManager from '@/components/dashboard/NotificationManager'
 import { subDays } from 'date-fns'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { UserGoal } from '@prisma/client'
+import { UserGoal, Language } from '@prisma/client'
+import { translations } from '@/lib/i18n/translations'
 
 interface WorkoutSummary {
   intensity: number
@@ -48,7 +49,8 @@ export default async function DashboardLayout({
           display_name: 'Pilot',
           theme_color: '#00FF41',
           calorie_goal: 2500,
-          goal: 'MAINTAIN' as UserGoal
+          goal: 'MAINTAIN' as UserGoal,
+          language: 'NB' as Language
         }
       })
     }
@@ -61,7 +63,8 @@ export default async function DashboardLayout({
        weight: 85,
        protein_goal: 180,
        calorie_goal: 2500,
-       goal: 'MAINTAIN' as UserGoal
+       goal: 'MAINTAIN' as UserGoal,
+       language: 'NB' as Language
     }
   }
 
@@ -75,7 +78,8 @@ export default async function DashboardLayout({
     recentLogs: [],
     proteinGoal: 180,
     calorieGoal: 2500,
-    goal: 'MAINTAIN' as UserGoal
+    goal: 'MAINTAIN' as UserGoal,
+    language: 'NB' as Language
   }
 
   // Safe fetch for CNS calculation
@@ -93,6 +97,8 @@ export default async function DashboardLayout({
 
   const themeColor = dbUser?.theme_color || '#00FF41'
   const displayName = dbUser?.display_name || 'Pilot'
+  const language = (dbUser?.language || 'NB') as Language
+  const t = translations[language]
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0A0A0B] font-sans text-white">
@@ -101,7 +107,8 @@ export default async function DashboardLayout({
           weight: dbUser?.weight ?? 85, 
           proteinGoal: dbUser?.protein_goal ?? 180,
           calorieGoal: dbUser?.calorie_goal ?? 2500,
-          goal: dbUser?.goal ?? 'MAINTAIN'
+          goal: dbUser?.goal ?? 'MAINTAIN',
+          language: language
         }}
         dailyTotals={dailyTotalsData as any}
         recentWorkouts={recentWorkouts}
@@ -112,7 +119,7 @@ export default async function DashboardLayout({
           <div className="flex items-center gap-6">
             <Link href="/" className="group">
               <h1 className="font-mono text-xl font-bold tracking-tighter group-hover:opacity-80 transition-opacity" style={{ color: themeColor }}>
-                BODY COCKPIT v1.0
+                {t.dashboard.title}
               </h1>
             </Link>
             <SyncStatus />

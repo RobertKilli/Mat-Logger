@@ -5,7 +5,7 @@ import { useCockpitStore } from '@/store/cockpitStore'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { executeLogAction } from '@/lib/metabolism/syncService'
 import { useRouter } from 'next/navigation'
-import { getExercisesByCategory } from '@/app/(dashboard)/training/actions'
+import { getExercisesByCategory, saveWorkoutAsTemplate } from '@/app/(dashboard)/training/actions'
 import { TrainingCategory } from '@prisma/client'
 
 interface SelectedExercise {
@@ -17,7 +17,11 @@ interface SelectedExercise {
   weight: string
 }
 
-export default function WorkoutEntryForm() {
+interface WorkoutEntryFormProps {
+  templates?: any[]
+}
+
+export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormProps) {
   const [category, setCategory] = useState<TrainingCategory | null>(null)
   const [intensity, setIntensity] = useState(5)
   const [duration, setDuration] = useState('45')
@@ -30,6 +34,10 @@ export default function WorkoutEntryForm() {
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showLibrary, setShowLibrary] = useState(false)
+
+  // Template State
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false)
+  const [templateName, setTemplateName] = useState('')
 
   const isOnline = useOnlineStatus()
   const setPreview = useCockpitStore((state) => state.setPreview)
@@ -53,8 +61,6 @@ export default function WorkoutEntryForm() {
     } else {
       setLibraryExercises([])
     }
-    // Clear selection if category changes? Maybe not, but for now yes.
-    setSelectedExercises([])
   }, [category])
 
   // Update store preview
@@ -72,6 +78,18 @@ export default function WorkoutEntryForm() {
       !selectedExercises.some(se => se.exerciseId === ex.id)
     )
   }, [libraryExercises, searchQuery, selectedExercises])
+
+  function applyTemplate(template: any) {
+    setCategory(template.category)
+    setSelectedExercises(template.template_exercises.map((te: any) => ({
+      id: Math.random().toString(36).substr(2, 9),
+      exerciseId: te.exercise_id,
+      name: te.exercise.name,
+      sets: te.sets,
+      reps: te.reps,
+      weight: te.weight?.toString() || ''
+    })))
+  }
 
   function addExercise(ex: {id: string, name: string}) {
     setSelectedExercises([...selectedExercises, {
@@ -103,8 +121,7 @@ export default function WorkoutEntryForm() {
     setIsSubmitting(true)
     setStatusMessage(null)
 
-    // Using the same TRAINING type but with extended payload
-    // Our syncService/executeLogAction needs to be able to pass this through
+    // 1. Log the actual workout
     const result = await executeLogAction('TRAINING', {
       category,
       duration: parseInt(duration),
@@ -120,111 +137,221 @@ export default function WorkoutEntryForm() {
     if (result?.error) {
       setStatusMessage({ type: 'error', text: result.error })
       setIsSubmitting(false)
-    } else {
-      setPreview(null)
-      setStatusMessage({ type: 'success', text: 'Operational data recorded.' })
-      setTimeout(() => {
-        router.push('/')
-      }, 1500)
+      return
     }
+
+    // 2. Optional: Save as template
+    if (saveAsTemplate && templateName.trim()) {
+      await saveWorkoutAsTemplate(templateName, category, selectedExercises.map(ex => ({
+        exerciseId: ex.exerciseId,
+        sets: ex.sets,
+        reps: ex.reps,
+        weight: ex.weight ? parseFloat(ex.weight) : undefined
+      })))
+    }
+
+    setPreview(null)
+    setStatusMessage({ type: 'success', text: 'Operational data recorded.' })
+    setTimeout(() => {
+      router.push('/')
+    }, 1500)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-12">
-      {/* Category Selection */}
-      <div className="space-y-4">
-        <span className="font-mono text-[10px] uppercase text-zinc-500 tracking-[0.2em] text-center block">
-          MISSION_PROTOCOL
-        </span>
-        <div className="grid grid-cols-3 gap-3">
-          {(['PUSH', 'PULL', 'LEGS'] as const).map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setCategory(cat)}
-              className={`rounded-xl py-6 font-mono text-xs font-bold transition-all ring-1 outline-none ${
-                category === cat
-                  ? 'bg-[#00FF41] text-black ring-[#00FF41] shadow-[0_0_20px_rgba(0,255,65,0.3)]'
-                  : 'bg-white/5 text-zinc-500 ring-white/10 hover:bg-white/10'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Exercise Builder */}
-      {category && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between border-b border-white/5 pb-2">
-            <h3 className="font-mono text-[10px] uppercase text-zinc-500 tracking-widest">Økt_Innhold</h3>
-            <button
-              type="button"
-              disabled={isLoadingLibrary}
-              onClick={() => setShowLibrary(true)}
-              className="font-mono text-[9px] font-bold text-[#00FF41] uppercase hover:underline disabled:opacity-30"
-            >
-              {isLoadingLibrary ? 'HENTER...' : '+ Legg til øvelse'}
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {selectedExercises.map((ex) => (
-              <div key={ex.id} className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-white">{ex.name}</span>
-                  <button 
-                    type="button" 
-                    onClick={() => removeExercise(ex.id)}
-                    className="text-zinc-600 hover:text-red-500"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                  </button>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <label className="block text-[8px] font-mono text-zinc-500 uppercase">Sett</label>
-                    <input 
-                      type="number"
-                      value={ex.sets}
-                      onChange={(e) => updateExercise(ex.id, 'sets', parseInt(e.target.value))}
-                      className="w-full rounded bg-zinc-900 border-0 p-2 text-xs font-mono text-white ring-1 ring-white/5"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-[8px] font-mono text-zinc-500 uppercase">Reps</label>
-                    <input 
-                      type="number"
-                      value={ex.reps}
-                      onChange={(e) => updateExercise(ex.id, 'reps', parseInt(e.target.value))}
-                      className="w-full rounded bg-zinc-900 border-0 p-2 text-xs font-mono text-white ring-1 ring-white/5"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-[8px] font-mono text-zinc-500 uppercase">Vekt (kg)</label>
-                    <input 
-                      type="number"
-                      step="0.5"
-                      value={ex.weight}
-                      onChange={(e) => updateExercise(ex.id, 'weight', e.target.value)}
-                      placeholder="-"
-                      className="w-full rounded bg-zinc-900 border-0 p-2 text-xs font-mono text-white ring-1 ring-white/5"
-                    />
-                  </div>
-                </div>
-              </div>
+    <div className="space-y-12">
+      {/* Templates Section */}
+      {templates.length > 0 && (
+        <div className="space-y-4">
+          <span className="font-mono text-[10px] uppercase text-zinc-500 tracking-[0.2em] block">
+            SAVED_ROUTINES
+          </span>
+          <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+            {templates.map(t => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => applyTemplate(t)}
+                className="shrink-0 rounded-full px-4 py-2 bg-white/5 border border-white/10 font-mono text-[9px] font-bold text-zinc-400 hover:bg-white/10 hover:text-white transition-all whitespace-nowrap"
+              >
+                {t.name.toUpperCase()}
+              </button>
             ))}
-
-            {selectedExercises.length === 0 && (
-               <div className="py-8 text-center border border-dashed border-zinc-800 rounded-xl">
-                  <p className="font-mono text-[9px] text-zinc-600 uppercase">Ingen øvelser valgt</p>
-               </div>
-            )}
           </div>
         </div>
       )}
+
+      <form onSubmit={handleSubmit} className="space-y-12">
+        {/* Category Selection */}
+        <div className="space-y-4">
+          <span className="font-mono text-[10px] uppercase text-zinc-500 tracking-[0.2em] text-center block">
+            MISSION_PROTOCOL
+          </span>
+          <div className="grid grid-cols-3 gap-3">
+            {(['PUSH', 'PULL', 'LEGS'] as const).map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => {
+                  setCategory(cat)
+                  if (!selectedExercises.length) setSelectedExercises([])
+                }}
+                className={`rounded-xl py-6 font-mono text-xs font-bold transition-all ring-1 outline-none ${
+                  category === cat
+                    ? 'bg-[#00FF41] text-black ring-[#00FF41] shadow-[0_0_20px_rgba(0,255,65,0.3)]'
+                    : 'bg-white/5 text-zinc-500 ring-white/10 hover:bg-white/10'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Exercise Builder */}
+        {category && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-b border-white/5 pb-2">
+              <h3 className="font-mono text-[10px] uppercase text-zinc-500 tracking-widest">Økt_Innhold</h3>
+              <button
+                type="button"
+                disabled={isLoadingLibrary}
+                onClick={() => setShowLibrary(true)}
+                className="font-mono text-[9px] font-bold text-[#00FF41] uppercase hover:underline disabled:opacity-30"
+              >
+                {isLoadingLibrary ? 'HENTER...' : '+ Legg til øvelse'}
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {selectedExercises.map((ex) => (
+                <div key={ex.id} className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm text-white">{ex.name}</span>
+                    <button 
+                      type="button" 
+                      onClick={() => removeExercise(ex.id)}
+                      className="text-zinc-600 hover:text-red-500"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-[8px] font-mono text-zinc-500 uppercase">Sett</label>
+                      <input 
+                        type="number"
+                        value={ex.sets}
+                        onChange={(e) => updateExercise(ex.id, 'sets', parseInt(e.target.value))}
+                        className="w-full rounded bg-zinc-900 border-0 p-2 text-xs font-mono text-white ring-1 ring-white/5"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[8px] font-mono text-zinc-500 uppercase">Reps</label>
+                      <input 
+                        type="number"
+                        value={ex.reps}
+                        onChange={(e) => updateExercise(ex.id, 'reps', parseInt(e.target.value))}
+                        className="w-full rounded bg-zinc-900 border-0 p-2 text-xs font-mono text-white ring-1 ring-white/5"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[8px] font-mono text-zinc-500 uppercase">Vekt (kg)</label>
+                      <input 
+                        type="number"
+                        step="0.5"
+                        value={ex.weight}
+                        onChange={(e) => updateExercise(ex.id, 'weight', e.target.value)}
+                        placeholder="-"
+                        className="w-full rounded bg-zinc-900 border-0 p-2 text-xs font-mono text-white ring-1 ring-white/5"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {selectedExercises.length === 0 && (
+                 <div className="py-8 text-center border border-dashed border-zinc-800 rounded-xl">
+                    <p className="font-mono text-[9px] text-zinc-600 uppercase">Ingen øvelser valgt</p>
+                 </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Save as Template */}
+        {selectedExercises.length > 0 && (
+          <div className="p-6 rounded-2xl bg-[#00FF41]/5 border border-[#00FF41]/10 space-y-4">
+             <label className="flex items-center gap-3 cursor-pointer">
+                <input 
+                  type="checkbox"
+                  checked={saveAsTemplate}
+                  onChange={(e) => setSaveAsTemplate(e.target.checked)}
+                  className="w-4 h-4 rounded border-zinc-800 bg-zinc-900 text-[#00FF41] focus:ring-[#00FF41]"
+                />
+                <span className="font-mono text-[10px] font-bold text-[#00FF41] uppercase tracking-widest">Lagre som ny rutine</span>
+             </label>
+             
+             {saveAsTemplate && (
+                <input 
+                  type="text"
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder="NAVN_PÅ_RUTINE (f.eks. Mandag Push)"
+                  className="w-full rounded-xl bg-black/40 border-0 p-3 text-xs font-mono text-white ring-1 ring-[#00FF41]/20 focus:ring-2 focus:ring-[#00FF41] outline-none"
+                />
+             )}
+          </div>
+        )}
+
+        {/* Global Metrics */}
+        <div className="grid grid-cols-2 gap-8 pt-6 border-t border-white/5">
+          <div className="space-y-4">
+            <div className="flex justify-between items-end">
+              <label className="font-mono text-[9px] uppercase text-zinc-500 tracking-widest">Intensitet</label>
+              <span className="font-mono text-2xl font-bold text-[#00FF41]">{intensity}</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={intensity}
+              onChange={(e) => setIntensity(parseInt(e.target.value))}
+              className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#00FF41] outline-none"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="font-mono text-[9px] uppercase text-zinc-500 tracking-widest block">Varighet</label>
+            <div className="relative">
+              <input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                className="w-full rounded-xl border-0 bg-white/5 py-4 pl-4 pr-12 font-mono text-xl font-bold text-white ring-1 ring-white/10 focus:ring-2 focus:ring-[#00FF41] outline-none"
+                required
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-[8px] text-zinc-600 uppercase">Min</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-center min-h-[1.5rem]">
+          {statusMessage && (
+            <p className={`font-mono text-xs uppercase font-bold ${statusMessage.type === 'error' ? 'text-red-500' : 'text-[#00FF41]'}`}>
+              {statusMessage.text}
+            </p>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          disabled={isSubmitting || !category || !duration}
+          className="w-full rounded-xl bg-[#00FF41] py-5 text-lg font-bold text-black transition-all hover:bg-[#00FF41]/90 disabled:opacity-30 disabled:grayscale shadow-lg"
+        >
+          {isSubmitting ? 'INITIATING_TRANSFER...' : 'BEKREFT_MISJONSDATA'}
+        </button>
+      </form>
 
       {/* Library Modal/Overlay */}
       {showLibrary && (
@@ -264,54 +391,6 @@ export default function WorkoutEntryForm() {
           </div>
         </div>
       )}
-
-      {/* Global Metrics */}
-      <div className="grid grid-cols-2 gap-8 pt-6 border-t border-white/5">
-        <div className="space-y-4">
-          <div className="flex justify-between items-end">
-            <label className="font-mono text-[9px] uppercase text-zinc-500 tracking-widest">Intensity</label>
-            <span className="font-mono text-2xl font-bold text-[#00FF41]">{intensity}</span>
-          </div>
-          <input
-            type="range"
-            min="1"
-            max="10"
-            value={intensity}
-            onChange={(e) => setIntensity(parseInt(e.target.value))}
-            className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#00FF41] outline-none"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="font-mono text-[9px] uppercase text-zinc-500 tracking-widest block">Duration</label>
-          <div className="relative">
-            <input
-              type="number"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              className="w-full rounded-xl border-0 bg-white/5 py-4 pl-4 pr-12 font-mono text-xl font-bold text-white ring-1 ring-white/10 focus:ring-2 focus:ring-[#00FF41] outline-none"
-              required
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-[8px] text-zinc-600 uppercase">Min</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="text-center min-h-[1.5rem]">
-        {statusMessage && (
-          <p className={`font-mono text-xs uppercase font-bold ${statusMessage.type === 'error' ? 'text-red-500' : 'text-[#00FF41]'}`}>
-            {statusMessage.text}
-          </p>
-        )}
-      </div>
-
-      <button
-        type="submit"
-        disabled={isSubmitting || !category || !duration}
-        className="w-full rounded-xl bg-[#00FF41] py-5 text-lg font-bold text-black transition-all hover:bg-[#00FF41]/90 disabled:opacity-30 disabled:grayscale shadow-lg"
-      >
-        {isSubmitting ? 'INITIATING_TRANSFER...' : 'CONFIRM_MISSION_DATA'}
-      </button>
-    </form>
+    </div>
   )
 }

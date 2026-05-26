@@ -1,5 +1,4 @@
 'use server'
-
 import { createClient } from '@/utils/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { MetabolicMotor } from '@/lib/metabolism'
@@ -19,7 +18,64 @@ export async function getExercisesByCategory(category: TrainingCategory) {
   }
 }
 
+export async function getWorkoutTemplates(category?: TrainingCategory) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized', data: [] }
+
+    const templates = await prisma.workoutTemplate.findMany({
+      where: { 
+        user_id: user.id,
+        ...(category ? { category } : {})
+      },
+      include: {
+        template_exercises: {
+          include: { exercise: true },
+          orderBy: { order: 'asc' }
+        }
+      },
+      orderBy: { updated_at: 'desc' }
+    })
+    return { data: templates }
+  } catch (e) {
+    return { error: 'Failed to fetch templates', data: [] }
+  }
+}
+
+export async function saveWorkoutAsTemplate(name: string, category: TrainingCategory, exercises: any[]) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    await prisma.workoutTemplate.create({
+      data: {
+        user_id: user.id,
+        name,
+        category,
+        template_exercises: {
+          create: exercises.map((ex, index) => ({
+            exercise_id: ex.exerciseId,
+            sets: ex.sets,
+            reps: ex.reps,
+            weight: ex.weight,
+            order: index
+          }))
+        }
+      }
+    })
+
+    revalidatePath('/training')
+    return { success: true }
+  } catch (e) {
+    console.error('Save template error:', e)
+    return { error: 'Failed to save routine' }
+  }
+}
+
 export async function logWorkoutExtended(data: {
+...
   category: TrainingCategory
   duration: number
   intensity: number

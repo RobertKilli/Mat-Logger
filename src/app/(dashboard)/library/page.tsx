@@ -1,9 +1,12 @@
 import FoodSearch from '@/components/dashboard/FoodSearch'
 import { getCategorizedLibrary } from './actions'
+import { getMealTemplates } from '../quick-log/actions'
 import { FoodCategory } from '@prisma/client'
 import { createClient } from '@/utils/supabase/server'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import MealTemplateList from '@/components/dashboard/MealTemplateList'
+import MealBuilderStatus from '@/components/dashboard/MealBuilderStatus'
 
 const CATEGORY_LABELS: Record<FoodCategory, string> = {
   MEAT: 'Kjøtt',
@@ -26,13 +29,18 @@ export default async function LibraryPage() {
   }) : null
 
   const tier = userRecord?.subscription_tier || 'FREE'
-  const response = await getCategorizedLibrary()
-  const categorized = response?.data || {}
+  const [libraryResponse, templatesResponse] = await Promise.all([
+    getCategorizedLibrary(),
+    getMealTemplates()
+  ])
+
+  const categorized = libraryResponse?.data || {}
+  const templates = templatesResponse?.data || []
   
   const categories = Object.keys(categorized) as FoodCategory[]
 
   return (
-    <div className="p-4 sm:p-8">
+    <div className="p-4 sm:p-8 pb-32">
       <div className="mx-auto max-w-4xl space-y-12">
         <header className="flex flex-col gap-4">
           <div className="flex items-center gap-4">
@@ -52,17 +60,19 @@ export default async function LibraryPage() {
               </p>
             </div>
           </div>
-          
-          {tier === 'FREE' && (
-            <Link href="/upgrade" className="inline-block self-start rounded-lg bg-[#00FF41]/10 px-4 py-2 font-mono text-[10px] font-bold text-[#00FF41] ring-1 ring-[#00FF41]/20 hover:bg-[#00FF41]/20 transition-all mt-2">
-               UPGRADE_TO_ELITE_FOR_AUTO_LOOKUP
-            </Link>
-          )}
         </header>
 
         <div className="rounded-2xl bg-[#141416] p-6 ring-1 ring-white/10 shadow-2xl">
           <FoodSearch />
         </div>
+
+        {/* Meal Templates Section */}
+        {templates.length > 0 && (
+          <section className="space-y-4">
+             <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest border-b border-white/5 pb-2">Lagrede Måltider</h2>
+             <MealTemplateList templates={templates} />
+          </section>
+        )}
 
         {/* Categorized Lists */}
         <section className="space-y-10">
@@ -105,6 +115,8 @@ export default async function LibraryPage() {
             ))
           )}
         </section>
+
+        <MealBuilderStatus />
       </div>
     </div>
   )

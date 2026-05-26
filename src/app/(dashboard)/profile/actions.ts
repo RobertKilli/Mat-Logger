@@ -41,7 +41,16 @@ export async function updateProfile(formData: FormData) {
       },
     })
 
+    // Log weight history
+    await prisma.weightLog.create({
+      data: {
+        user_id: user.id,
+        weight
+      }
+    })
+
     revalidatePath('/profile')
+    revalidatePath('/')
     return { success: true }
   } catch (e) {
     console.error('Error updating profile:', e)

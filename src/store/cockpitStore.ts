@@ -26,11 +26,31 @@ interface DailyFoodLog {
   time: string
 }
 
+interface MealBuilderItem {
+  id: string
+  foodItem: {
+    id: string
+    name: string
+    proteinPer100g: number
+    carbsPer100g: number
+    fatPer100g: number
+    caloriesPer100g: number
+    baseAmount: number
+    baseUnit: string
+    gramsPerUnit: number | null
+    servingSize: number | null
+    servingUnit: string | null
+  }
+  inputMode: string
+  inputAmount: number
+}
+
 interface CockpitState {
   weight: number | null
   proteinGoal: number
   calorieGoal: number
   goal: 'CUT' | 'MAINTAIN' | 'BULK'
+  language: 'NB' | 'EN'
   dailyConsumedProtein: number
   dailyConsumedCarbs: number
   dailyConsumedFat: number
@@ -44,10 +64,17 @@ interface CockpitState {
   nextMealTime: string | null
   preview: PreviewData | null
   pendingSyncQueue: PendingAction[]
+  mealBuilderQueue: MealBuilderItem[]
   isSyncing: boolean
   syncError: string | null
   
-  setBaseline: (data: { weight: number | null, proteinGoal: number, calorieGoal?: number, goal?: 'CUT' | 'MAINTAIN' | 'BULK' }) => void
+  setBaseline: (data: { 
+    weight: number | null, 
+    proteinGoal: number, 
+    calorieGoal?: number, 
+    goal?: 'CUT' | 'MAINTAIN' | 'BULK',
+    language?: 'NB' | 'EN'
+  }) => void
   setDailyTotals: (totals: {
     protein: number
     carbs: number
@@ -57,11 +84,15 @@ interface CockpitState {
     proteinGoal?: number
     calorieGoal?: number
     goal?: 'CUT' | 'MAINTAIN' | 'BULK'
+    language?: 'NB' | 'EN'
   }) => void
   setWorkoutLogs: (logs: { intensity: number; logged_at: Date }[]) => void
   setPreview: (data: Partial<PreviewData> | null) => void
   addToSyncQueue: (action: PendingAction) => void
   removeFromSyncQueue: (id: string) => void
+  addToMealBuilder: (item: MealBuilderItem) => void
+  removeFromMealBuilder: (id: string) => void
+  clearMealBuilder: () => void
   setIsSyncing: (isSyncing: boolean) => void
   setSyncError: (error: string | null) => void
   updateMetabolicState: () => void
@@ -76,6 +107,7 @@ export const useCockpitStore = create<CockpitState>()(
       proteinGoal: 0,
       calorieGoal: 2500,
       goal: 'MAINTAIN',
+      language: 'NB',
       dailyConsumedProtein: 0,
       dailyConsumedCarbs: 0,
       dailyConsumedFat: 0,
@@ -89,6 +121,7 @@ export const useCockpitStore = create<CockpitState>()(
       nextMealTime: null,
       preview: null,
       pendingSyncQueue: [],
+      mealBuilderQueue: [],
       isSyncing: false,
       syncError: null,
       
@@ -97,7 +130,8 @@ export const useCockpitStore = create<CockpitState>()(
           weight: data.weight, 
           proteinGoal: data.proteinGoal,
           calorieGoal: data.calorieGoal ?? get().calorieGoal,
-          goal: data.goal ?? get().goal
+          goal: data.goal ?? get().goal,
+          language: data.language ?? get().language
         })
         get().updateMetabolicState()
       },
@@ -111,6 +145,7 @@ export const useCockpitStore = create<CockpitState>()(
           proteinGoal: totals.proteinGoal ?? get().proteinGoal,
           calorieGoal: totals.calorieGoal ?? get().calorieGoal,
           goal: totals.goal ?? get().goal,
+          language: totals.language ?? get().language,
         })
         get().updateMetabolicState()
       },
@@ -146,6 +181,17 @@ export const useCockpitStore = create<CockpitState>()(
           pendingSyncQueue: state.pendingSyncQueue.filter(a => a.id !== id)
         }))
       },
+      addToMealBuilder: (item) => {
+        set((state) => ({
+          mealBuilderQueue: [...state.mealBuilderQueue, item]
+        }))
+      },
+      removeFromMealBuilder: (id) => {
+        set((state) => ({
+          mealBuilderQueue: state.mealBuilderQueue.filter(i => i.id !== id)
+        }))
+      },
+      clearMealBuilder: () => set({ mealBuilderQueue: [] }),
       setIsSyncing: (isSyncing) => set({ isSyncing }),
       setSyncError: (syncError) => set({ syncError }),
       updateMetabolicState: () => {
@@ -195,6 +241,7 @@ export const useCockpitStore = create<CockpitState>()(
         proteinGoal: state.proteinGoal,
         calorieGoal: state.calorieGoal,
         goal: state.goal,
+        language: state.language,
         dailyConsumedProtein: state.dailyConsumedProtein,
         dailyConsumedCarbs: state.dailyConsumedCarbs,
         dailyConsumedFat: state.dailyConsumedFat,
@@ -206,6 +253,7 @@ export const useCockpitStore = create<CockpitState>()(
         lastMealTime: state.lastMealTime,
         nextMealTime: state.nextMealTime,
         pendingSyncQueue: state.pendingSyncQueue,
+        mealBuilderQueue: state.mealBuilderQueue,
         recentWorkoutLogs: state.recentWorkoutLogs,
       }),
       onRehydrateStorage: () => (state) => {

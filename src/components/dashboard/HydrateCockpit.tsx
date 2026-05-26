@@ -9,6 +9,7 @@ interface HydrateCockpitProps {
     proteinGoal: number
     calorieGoal: number
     goal: 'CUT' | 'MAINTAIN' | 'BULK'
+    language: 'NB' | 'EN'
   }
   dailyTotals: {
     protein: number
@@ -18,6 +19,7 @@ interface HydrateCockpitProps {
     proteinGoal: number
     calorieGoal: number
     goal: 'CUT' | 'MAINTAIN' | 'BULK'
+    language: 'NB' | 'EN'
     recentLogs: any[]
   }
   recentWorkouts: { intensity: number; logged_at: Date }[]
@@ -33,7 +35,8 @@ export default function HydrateCockpit({ baseline, dailyTotals, recentWorkouts }
       weight: baseline.weight,
       proteinGoal: baseline.proteinGoal,
       calorieGoal: baseline.calorieGoal,
-      goal: baseline.goal
+      goal: baseline.goal,
+      language: baseline.language
     })
     
     // Explicitly mapping to ensure all store fields are covered
@@ -42,7 +45,8 @@ export default function HydrateCockpit({ baseline, dailyTotals, recentWorkouts }
       carbs: dailyTotals.carbs,
       fat: dailyTotals.fat,
       calories: dailyTotals.calories,
-      recentLogs: dailyTotals.recentLogs
+      recentLogs: dailyTotals.recentLogs,
+      language: dailyTotals.language
     })
     
     setWorkoutLogs(recentWorkouts)

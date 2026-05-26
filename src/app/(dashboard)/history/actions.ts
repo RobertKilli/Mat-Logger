@@ -44,7 +44,7 @@ export async function getUnifiedHistory() {
     // Group by day
     const historyMap: Record<string, {
       date: string
-      workouts: typeof workouts
+      workouts: any[]
       food: {
         protein: number
         carbs: number
@@ -76,8 +76,8 @@ export async function getUnifiedHistory() {
     })
 
     // Add workouts to the map
-    workouts.forEach(log => {
-      const dayKey = format(startOfDay(new Date(log.logged_at)), 'yyyy-MM-dd')
+    workouts.forEach(workout => {
+      const dayKey = format(startOfDay(new Date(workout.logged_at)), 'yyyy-MM-dd')
       if (!historyMap[dayKey]) {
         historyMap[dayKey] = {
           date: dayKey,
@@ -87,7 +87,16 @@ export async function getUnifiedHistory() {
           deficiencyReason: null
         }
       }
-      historyMap[dayKey].workouts.push(log)
+      
+      // Calculate total volume for this workout
+      const totalVolume = workout.workout_exercises.reduce((sum, ex) => {
+        return sum + (ex.sets * ex.reps * (ex.weight || 0))
+      }, 0)
+
+      historyMap[dayKey].workouts.push({
+        ...workout,
+        totalVolume: Math.round(totalVolume)
+      })
     })
 
     // Analyze deficiencies
