@@ -5,12 +5,13 @@ Mat-Logger skal oppgraderes fra en enkel mat- og treningslogger til en mer kompl
 
 ---
 
-## Current Status (v1.2)
+## Current Status (v1.3)
 - [x] **Full i18n Core:** Infrastruktur for Norsk/Engelsk på plass med `useI18n` hook.
 - [x] **Progress Center:** Vekt-grafer og historisk vektlogging operative.
 - [x] **Extended Training:** Støtte for øvelser, sett, reps og vekt i PPL-logger.
 - [x] **Goal Management:** Bulk/Deff-strategier med automatiske kaloriforslag.
-- [x] **Meal Templates:** Lagre og logg faste måltidskombinasjoner (v1.2).
+- [x] **Meal Templates:** Lagre og logg faste måltidskombinasjoner.
+- [x] **Strength Analytics:** Visualisering av 1RM-trender og volum-tracking (v1.3).
 
 ---
 
@@ -22,13 +23,13 @@ Mat-Logger skal oppgraderes fra en enkel mat- og treningslogger til en mer kompl
 - [ ] **Recent Items:** Smart-liste med de 10 mest brukte matvarene per måltidstype.
 
 ### 2. Workout Logging (Hevy-style)
-- [ ] **Trenings-rutiner:** Lagre faste økter (f.eks. "Mandag Push") som maler.
+- [x] **Trenings-rutiner:** Lagre faste økter (f.eks. "Mandag Push") som maler.
+- [x] **Volume Tracking:** Automatisk kalkulering av totalt volum per økt.
 - [ ] **AI-Demo Generator:** Automatisk generering av teknikk-bilder for biblioteket.
-- [ ] **Volume Tracking:** Automatisk kalkulering av totalt volum per økt.
-- [ ] **1RM Estimates:** Beregne estimert styrkeutvikling i grafene.
+- [ ] **1RM Estimates:** Beregne estimert styrkeutvikling i grafene. (Basis på plass i Progress Center).
 
 ### 3. Visual & Analytics Center
-- [ ] **Styrke-grafer:** Visualisering av 1RM og volum over tid.
+- [x] **Styrke-grafer:** Visualisering av 1RM og volum over tid.
 - [ ] **Consistency Score:** Oversikt over dager man har truffet makro-målene.
 - [ ] **Photo Log:** Mulighet til å laste opp dagsform-bilder til progresjonsfanen.
 

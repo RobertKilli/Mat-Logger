@@ -1,8 +1,9 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { getWeightHistory } from './actions'
+import { getWeightHistory, getStrengthHistory } from './actions'
 import WeightChart from '@/components/dashboard/WeightChart'
+import StrengthChart from '@/components/dashboard/StrengthChart'
 
 export default async function ProgressPage() {
   const supabase = await createClient()
@@ -12,7 +13,13 @@ export default async function ProgressPage() {
     redirect('/login')
   }
 
-  const { data: weightHistory } = await getWeightHistory(30)
+  const [weightRes, strengthRes] = await Promise.all([
+    getWeightHistory(30),
+    getStrengthHistory(90)
+  ])
+
+  const weightHistory = weightRes.data || []
+  const strengthHistory = strengthRes.data || []
 
   return (
     <div className="p-4 sm:p-8">
@@ -62,15 +69,29 @@ export default async function ProgressPage() {
           </section>
         </div>
 
-        {/* Future placeholders for Strength trends */}
-        <section className="space-y-4 opacity-30 grayscale cursor-not-allowed">
+        {/* Strength trends */}
+        <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-mono text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] ml-1">Styrkeutvikling (1RM Trender)</h2>
-            <span className="font-mono text-[8px] bg-white/10 px-2 py-1 rounded text-white">UPCOMING_MODULE</span>
           </div>
-          <div className="h-48 rounded-3xl border border-dashed border-zinc-800 flex items-center justify-center">
-             <p className="font-mono text-[9px] text-zinc-700 uppercase tracking-widest">Kalkulerer biomekanisk progresjon...</p>
-          </div>
+          
+          {strengthHistory.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {strengthHistory.map((ex: any) => (
+                <StrengthChart 
+                  key={ex.name} 
+                  exerciseName={ex.name} 
+                  data={ex.data} 
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="h-48 rounded-3xl border border-dashed border-zinc-800 flex items-center justify-center bg-white/5">
+               <p className="font-mono text-[9px] text-zinc-600 uppercase tracking-widest text-center px-8 text-balance">
+                 Ingen styrkedata tilgjengelig. Loggfør øvelser med vekt for å se trender her.
+               </p>
+            </div>
+          )}
         </section>
       </div>
     </div>

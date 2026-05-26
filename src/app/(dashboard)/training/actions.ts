@@ -75,7 +75,6 @@ export async function saveWorkoutAsTemplate(name: string, category: TrainingCate
 }
 
 export async function logWorkoutExtended(data: {
-...
   category: TrainingCategory
   duration: number
   intensity: number
