@@ -8,7 +8,7 @@ export interface MissionBriefing {
 }
 
 /**
- * Analyzes telemetry and intake to generate actionable mission briefings.
+ * Analyzes telemetry and intake to generate clinical performance briefings.
  */
 export function generateGuidance(
   biometrics: BiometricLog[],
@@ -16,58 +16,57 @@ export function generateGuidance(
   recentWorkouts: WorkoutSummary[]
 ): MissionBriefing {
   
-  // Extract key metrics
+  // Extract primary telemetry
   const sleep = biometrics.find(b => b.type === 'SLEEP_SCORE')?.value || 0
   const stress = biometrics.find(b => b.type === 'STRESS_LEVEL')?.value || 0
   const battery = biometrics.find(b => b.type === 'BODY_BATTERY')?.value || 0
-  const hr = biometrics.find(b => b.type === 'RESTING_HR')?.value || 0
 
-  // 1. Fatigue Analysis
-  if (sleep < 60 || battery < 30) {
+  // 1. Critical Recovery Analysis
+  if (sleep < 55 || battery < 30) {
     return {
       type: 'REST',
-      title: 'RESTITUSJON_PÅKREVD',
-      message: 'Systematisk tretthet detektert. Din Body Battery er kritisk lav. Reduser treningsvolumet med 50% i dag.',
-      actionItem: 'Prioriter 2 timer ekstra søvn i natt.'
+      title: 'RECOVERY_DEFICIT',
+      message: 'Systemisk utmattelse detektert. Biometrisk status tilsier kritisk lav restitusjonsevne.',
+      actionItem: 'Deaktiver planlagt trening. Prioriter 120min søvn-overskudd.'
     }
   }
 
-  // 2. High Stress Analysis
-  if (stress > 60) {
+  // 2. High CNS Load Analysis
+  if (stress > 65) {
     return {
       type: 'CAUTION',
-      title: 'HØYT_SYSTEMSTRESS',
-      message: 'Fysiologisk stressnivå er forhøyet. Unngå maksløft eller høyintensitets-intervaller.',
-      actionItem: 'Gjennomfør 15 minutter aktiv restitusjon (gåtur/tøying).'
+      title: 'ELEVATED_CNS_STRESS',
+      message: 'Sentralnervesystemet rapporterer forhøyet belastning. Nevromuskulær effektivitet er redusert.',
+      actionItem: 'Unngå maksimale belastninger (>85% 1RM). Utfør lavintensitets-bevegelse.'
     }
   }
 
-  // 3. Nutrition/Fueling Analysis
-  if (nutrition.protein < nutrition.goal * 0.5 && nutrition.goal > 0) {
+  // 3. Anabolic Support Analysis
+  if (nutrition.protein < nutrition.goal * 0.6 && nutrition.goal > 0) {
      return {
         type: 'FUEL',
-        title: 'DRIVSTOFF_MANKO',
-        message: 'Proteinnivået ditt er for lavt til å støtte muskulær reparasjon etter forrige økt.',
-        actionItem: 'Innta et måltid med minst 40g hurtigabsorberende protein nå.'
+        title: 'ANABOLIC_INSUFFICIENCY',
+        message: 'Aminosyre-tilgjengelighet utilstrekkelig for muskulær reparasjon og proteinsyntese.',
+        actionItem: 'Innta 40-50g protein umiddelbart for å stabilisere nitrogenbalansen.'
      }
   }
 
-  // 4. Optimal State
-  if (sleep > 80 && battery > 70) {
+  // 4. Operational Readiness: HIGH
+  if (sleep > 80 && battery > 70 && stress < 30) {
     return {
       type: 'OPTIMAL',
-      title: 'KLAR_FOR_MISJON',
-      message: 'Alle systemer er grønne. Kroppen din er i optimal tilstand for en tung styrkeøkt.',
-      actionItem: 'Sikt mot en ny Personlig Rekord (PR) i dag!'
+      title: 'SYSTEM_READY',
+      message: 'Alle biometriske parametere er innenfor optimalt område. Systemet er klargjort for maksimal mekanisk belastning.',
+      actionItem: 'Gjennomfør planlagt misjon. Sikt på progressiv overlast (1RM).'
     }
   }
 
-  // Default
+  // Default Operational State
   return {
     type: 'CAUTION',
-    title: 'OPERASJONELL_MODUS',
-    message: 'Fortsett daglig loggføring. Vi overvåker dine biometriske trender.',
-    actionItem: 'Hold deg til din planlagte treningsøkt.'
+    title: 'STABLE_OPERATIONS',
+    message: 'Systemet opererer innenfor normale parametere. Telemetri overvåkes kontinuerlig.',
+    actionItem: 'Følg etablert treningsprotokoll.'
   }
 }
 

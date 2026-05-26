@@ -1,34 +1,62 @@
-import { createClient } from '@/utils/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getWeightHistory, getStrengthHistory } from './actions'
+import { getWeightHistory, getStrengthHistory, getPBs } from './actions'
 import { getConsistencyData, getDailyPhotos } from './consistencyActions'
 import WeightChart from '@/components/dashboard/WeightChart'
 import StrengthChart from '@/components/dashboard/StrengthChart'
+import PhotoUpload from '@/components/dashboard/PhotoUpload'
+import PBWallOfFame from '@/components/dashboard/PBWallOfFame'
+import { useI18n } from '@/hooks/useI18n'
 
-export default async function ProgressPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default function ProgressPage() {
+  const { t } = useI18n()
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  if (!user) {
-    redirect('/login')
+  async function loadData() {
+    setLoading(true)
+    try {
+      const [weightRes, strengthRes, consistencyRes, photosRes, pbRes] = await Promise.all([
+        getWeightHistory(30),
+        getStrengthHistory(90),
+        getConsistencyData(),
+        getDailyPhotos(),
+        getPBs()
+      ])
+
+      setData({
+        weightHistory: weightRes.data || [],
+        strengthHistory: strengthRes.data || [],
+        consistency: consistencyRes.data || { score: 0, days: [] },
+        photos: photosRes.data || [],
+        pbs: pbRes.data || []
+      })
+    } catch (e) {
+      console.error('Error loading progress data:', e)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const [weightRes, strengthRes, consistencyRes, photosRes] = await Promise.all([
-    getWeightHistory(30),
-    getStrengthHistory(90),
-    getConsistencyData(),
-    getDailyPhotos()
-  ])
+  useEffect(() => {
+    loadData()
+  }, [])
 
-  const weightHistory = weightRes.data || []
-  const strengthHistory = strengthRes.data || []
-  const consistency = consistencyRes.data || { score: 0, days: [] }
-  const photos = photosRes.data || []
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center font-mono text-xs text-[#00FF41] uppercase tracking-widest">
+        {t('common.loading')}
+      </div>
+    )
+  }
+
+  const { weightHistory, strengthHistory, consistency, photos, pbs } = data
 
   return (
     <div className="p-4 sm:p-8 pb-24">
-      <div className="mx-auto max-w-4xl space-y-12">
+      <div className="mx-auto max-w-5xl space-y-12">
         <header className="flex items-center gap-4">
           <Link 
             href="/" 
@@ -38,9 +66,9 @@ export default async function ProgressPage() {
           </Link>
           <div>
             <h1 className="font-mono text-3xl font-bold tracking-tighter text-[#00FF41]">
-              PROGRESS_CENTER
+              {t('progress.title')}
             </h1>
-            <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mt-0.5">Analyses & Performance Trends</p>
+            <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mt-0.5">{t('progress.subtitle')}</p>
           </div>
         </header>
 
@@ -62,23 +90,25 @@ export default async function ProgressPage() {
           </div>
 
           <div className="flex-1 text-center md:text-left space-y-2">
-             <h2 className="font-mono text-xl font-bold text-white uppercase tracking-tight">Consistency Protocol</h2>
+             <h2 className="font-mono text-xl font-bold text-white uppercase tracking-tight">{t('progress.consistency_protocol')}</h2>
              <p className="text-zinc-400 text-xs font-mono leading-relaxed max-w-md">
-               Din poengsum er basert på disiplin rundt makro-mål og treningsfrekvens de siste 7 dagene. 
-               Oppretthold 90+ for optimal biomekanisk adapsjon.
+               {t('progress.consistency_desc')} {t('progress.optimal_threshold')}
              </p>
              <div className="flex gap-2 pt-2 justify-center md:justify-start">
-                {consistency.days.map((d, i) => (
+                {consistency.days.map((d: any, i: number) => (
                    <div key={i} className={`h-1.5 w-6 rounded-full ${d.score >= 100 ? 'bg-[#00FF41]' : d.score >= 50 ? 'bg-[#3B82F6]' : 'bg-zinc-800'}`} title={d.date} />
                 ))}
              </div>
           </div>
         </section>
 
+        {/* Wall of Fame */}
+        <PBWallOfFame pbs={pbs} />
+
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Weight Analysis */}
           <section className="lg:col-span-2 space-y-4">
-            <h2 className="font-mono text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] ml-1">Kroppssammensetning</h2>
+            <h2 className="font-mono text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] ml-1">{t('progress.body_comp')}</h2>
             <div className="rounded-3xl bg-[#141416] p-8 shadow-2xl ring-1 ring-white/10">
               <WeightChart data={weightHistory} />
             </div>
@@ -86,19 +116,19 @@ export default async function ProgressPage() {
 
           {/* Quick Stats */}
           <section className="space-y-4">
-            <h2 className="font-mono text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] ml-1">Nøkkeltall</h2>
+            <h2 className="font-mono text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] ml-1">{t('progress.key_metrics')}</h2>
             <div className="grid gap-4">
               <div className="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10">
-                 <p className="font-mono text-[9px] text-zinc-500 uppercase">Gjennomsnittlig Vekt</p>
+                 <p className="font-mono text-[9px] text-zinc-500 uppercase">{t('progress.avg_weight')}</p>
                  <p className="font-mono text-xl font-bold text-white mt-1">
                    {weightHistory.length > 0 
-                     ? (weightHistory.reduce((s, b) => s + b.weight, 0) / weightHistory.length).toFixed(1) 
+                     ? (weightHistory.reduce((s: number, b: any) => s + b.weight, 0) / weightHistory.length).toFixed(1) 
                      : 'N/A'
                    } kg
                  </p>
               </div>
               <div className="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10">
-                 <p className="font-mono text-[9px] text-zinc-500 uppercase">Loggføringer (30d)</p>
+                 <p className="font-mono text-[9px] text-zinc-500 uppercase">{t('progress.sessions_30d')}</p>
                  <p className="font-mono text-xl font-bold text-[#00FF41] mt-1">{weightHistory.length} Sessions</p>
               </div>
             </div>
@@ -107,7 +137,7 @@ export default async function ProgressPage() {
 
         {/* Strength trends */}
         <section className="space-y-4">
-          <h2 className="font-mono text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] ml-1">Styrkeutvikling (1RM Trender)</h2>
+          <h2 className="font-mono text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] ml-1">{t('progress.strength_trends')}</h2>
           {strengthHistory.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {strengthHistory.map((ex: any) => (
@@ -121,7 +151,7 @@ export default async function ProgressPage() {
           ) : (
             <div className="h-48 rounded-3xl border border-dashed border-zinc-800 flex items-center justify-center bg-white/5">
                <p className="font-mono text-[9px] text-zinc-600 uppercase tracking-widest text-center px-8 text-balance">
-                 Ingen styrkedata tilgjengelig. Loggfør øvelser med vekt for å se trender her.
+                 {t('progress.no_strength_data')}
                </p>
             </div>
           )}
@@ -130,15 +160,13 @@ export default async function ProgressPage() {
         {/* Photo Log Section */}
         <section className="space-y-4">
            <div className="flex items-center justify-between ml-1">
-              <h2 className="font-mono text-xs font-bold text-zinc-500 uppercase tracking-[0.2em]">Bio-Visual Log (Photos)</h2>
-              <button className="font-mono text-[8px] text-[#00FF41] uppercase border border-[#00FF41]/30 px-3 py-1 rounded-full hover:bg-[#00FF41]/10 transition-all">
-                + LAST OPP BILDE
-              </button>
+              <h2 className="font-mono text-xs font-bold text-zinc-500 uppercase tracking-[0.2em]">{t('progress.photo_log')}</h2>
+              <PhotoUpload onSuccess={() => loadData()} />
            </div>
            
            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
               {photos.length > 0 ? (
-                photos.map(p => (
+                photos.map((p: any) => (
                    <div key={p.id} className="aspect-[3/4] rounded-2xl overflow-hidden ring-1 ring-white/10 group relative">
                       <img src={p.image_url} alt="" className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all" />
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -148,7 +176,7 @@ export default async function ProgressPage() {
                 ))
               ) : (
                  <div className="col-span-full h-32 rounded-3xl border border-dashed border-zinc-800 flex items-center justify-center bg-white/5">
-                    <p className="font-mono text-[9px] text-zinc-700 uppercase">Ingen dagsform-bilder logget ennå</p>
+                    <p className="font-mono text-[9px] text-zinc-700 uppercase">{t('progress.no_photos')}</p>
                  </div>
               )}
            </div>

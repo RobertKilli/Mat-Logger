@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { searchFoodItems, forkFoodItem, deleteFoodItem } from '@/app/(dashboard)/library/actions'
+import { useState, useEffect } from 'react'
+import { searchFoodItems } from '@/app/(dashboard)/library/actions'
 import { getRecentFoodItems } from '@/app/(dashboard)/library/recentActions'
 import Link from 'next/link'
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react'
 import ForkNudgeForm from '@/components/forms/ForkNudgeForm'
 import AddFoodForm from '@/components/forms/AddFoodForm'
 import BarcodeScanner from './BarcodeScanner'
+import { useI18n } from '@/hooks/useI18n'
 
 interface FoodItem {
   id: string
@@ -28,6 +29,7 @@ interface FoodItem {
 }
 
 export default function FoodSearch() {
+  const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<{ internal: FoodItem[], external: FoodItem[], isPremium?: boolean }>({ internal: [], external: [] })
   const [recentItems, setRecentItems] = useState<FoodItem[]>([])
@@ -97,7 +99,7 @@ export default function FoodSearch() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="SØK ETTER NAVN ELLER STREKKODE..."
+            placeholder={t('library.search_placeholder')}
             className="w-full rounded-xl border-0 bg-white/5 py-4 pl-4 pr-24 font-mono text-sm tracking-widest text-white ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-[#00FF41] outline-none"
           />
           <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
@@ -119,7 +121,7 @@ export default function FoodSearch() {
           onClick={() => setIsAddingNew(true)}
           className="rounded-xl bg-white/5 px-6 py-4 font-mono text-xs font-bold text-[#00FF41] ring-1 ring-white/10 hover:bg-white/10 transition-all"
         >
-          + MANUELL REGISTRERING
+          {t('library.manual_reg')}
         </button>
       </div>
 
@@ -133,7 +135,7 @@ export default function FoodSearch() {
       <div className="space-y-8">
         {query.length < 2 && recentItems.length > 0 && (
           <div className="space-y-3">
-             <h3 className="font-mono text-[10px] text-[#00FF41] uppercase tracking-widest ml-1 opacity-70">Nylig brukte varer</h3>
+             <h3 className="font-mono text-[10px] text-[#00FF41] uppercase tracking-widest ml-1 opacity-70">{t('library.recent_items')}</h3>
              {recentItems.map(item => (
                 <FoodItemRow key={item.id} item={item} onFork={() => setForkItem(item)} isInternal={item.user_id !== null} />
              ))}
@@ -142,7 +144,7 @@ export default function FoodSearch() {
 
         {results.internal.length > 0 && (
           <div className="space-y-3">
-             <h3 className="font-mono text-[10px] text-zinc-600 uppercase tracking-widest ml-1">Verifisert i ditt cockpit</h3>
+             <h3 className="font-mono text-[10px] text-zinc-600 uppercase tracking-widest ml-1">{t('library.verified_local')}</h3>
              {results.internal.map(item => (
                 <FoodItemRow key={item.id} item={item} onFork={() => setForkItem(item)} isInternal />
              ))}
@@ -151,7 +153,7 @@ export default function FoodSearch() {
 
         {results.external.length > 0 && (
           <div className="space-y-3">
-             <h3 className="font-mono text-[10px] text-zinc-600 uppercase tracking-widest ml-1">Globale datasett (Open Food Facts)</h3>
+             <h3 className="font-mono text-[10px] text-zinc-600 uppercase tracking-widest ml-1">{t('library.global_dataset')}</h3>
              {results.external.map(item => (
                 <FoodItemRow 
                   key={item.id} 
@@ -165,7 +167,7 @@ export default function FoodSearch() {
 
         {query.length >= 2 && !hasResults && !isLoading && !searchError && (
           <div className="py-10 text-center font-mono text-xs text-zinc-600 uppercase">
-            Ingen operative treff funnet
+            {t('library.no_results')}
           </div>
         )}
       </div>
@@ -176,7 +178,7 @@ export default function FoodSearch() {
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <DialogPanel className="mx-auto max-w-lg w-full rounded-2xl bg-[#141416] p-8 ring-1 ring-white/10 shadow-2xl">
             <DialogTitle className="font-mono text-xl font-bold text-[#00FF41] uppercase tracking-tight mb-6 text-center">
-              STREKKODE_SKANNER
+              {t('library.scanner_title')}
             </DialogTitle>
             <BarcodeScanner 
                onClose={() => setIsScanning(false)} 
@@ -232,6 +234,7 @@ function FoodItemRow({ item, onFork, onAdd, isInternal }: { item: FoodItem, onFo
     <div className="group flex items-center gap-4 rounded-xl bg-[#141416] p-3 ring-1 ring-white/5 transition-all hover:bg-white/5 hover:ring-[#00FF41]/30">
       <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-zinc-900 ring-1 ring-white/10">
         {item.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={item.image_url} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center font-mono text-[8px] text-zinc-700 uppercase">No Img</div>

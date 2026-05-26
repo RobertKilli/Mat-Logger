@@ -122,3 +122,42 @@ export async function getStrengthHistory(days: number = 90) {
     return { error: 'Failed to fetch strength data', data: [] }
   }
 }
+
+export async function getPBs() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { error: 'Unauthorized', data: [] }
+
+  try {
+    const logs = await prisma.workoutExercise.findMany({
+      where: {
+        workout_log: { user_id: user.id },
+        weight: { gt: 0 }
+      },
+      include: {
+        exercise: true,
+        workout_log: { select: { logged_at: true } }
+      },
+      orderBy: { weight: 'desc' }
+    })
+
+    // Take the top weight for each exercise
+    const pbMap: Record<string, any> = {}
+    logs.forEach(log => {
+      if (!pbMap[log.exercise_id]) {
+        pbMap[log.exercise_id] = {
+          name: log.exercise.name,
+          weight: log.weight,
+          date: log.workout_log.logged_at,
+          category: log.exercise.category
+        }
+      }
+    })
+
+    return { data: Object.values(pbMap) }
+  } catch (e) {
+    console.error('Error fetching PBs:', e)
+    return { error: 'Failed to fetch PB data', data: [] }
+  }
+}

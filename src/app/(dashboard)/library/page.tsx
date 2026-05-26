@@ -1,14 +1,16 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import FoodSearch from '@/components/dashboard/FoodSearch'
 import { getCategorizedLibrary } from './actions'
 import { getMealTemplates } from '../quick-log/actions'
 import { FoodCategory } from '@prisma/client'
-import { createClient } from '@/utils/supabase/server'
-import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import MealTemplateList from '@/components/dashboard/MealTemplateList'
 import MealBuilderStatus from '@/components/dashboard/MealBuilderStatus'
+import { useI18n } from '@/hooks/useI18n'
 
-const CATEGORY_LABELS: Record<FoodCategory, string> = {
+const CATEGORY_LABELS: Record<string, string> = {
   MEAT: 'Kjøtt',
   FISH: 'Fisk',
   FRUIT: 'Frukt',
@@ -19,24 +21,35 @@ const CATEGORY_LABELS: Record<FoodCategory, string> = {
   OTHER: 'Annet',
 }
 
-export default async function LibraryPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default function LibraryPage() {
+  const { t } = useI18n()
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const userRecord = user ? await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { subscription_tier: true }
-  }) : null
+  useEffect(() => {
+    async function loadData() {
+      const [libraryResponse, templatesResponse] = await Promise.all([
+        getCategorizedLibrary(),
+        getMealTemplates()
+      ])
+      setData({
+        categorized: libraryResponse?.data || {},
+        templates: templatesResponse?.data || []
+      })
+      setLoading(false)
+    }
+    loadData()
+  }, [])
 
-  const tier = userRecord?.subscription_tier || 'FREE'
-  const [libraryResponse, templatesResponse] = await Promise.all([
-    getCategorizedLibrary(),
-    getMealTemplates()
-  ])
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center font-mono text-xs text-[#00FF41] uppercase tracking-widest">
+        {t('common.loading')}
+      </div>
+    )
+  }
 
-  const categorized = libraryResponse?.data || {}
-  const templates = templatesResponse?.data || []
-  
+  const { categorized, templates } = data
   const categories = Object.keys(categorized) as FoodCategory[]
 
   return (
@@ -47,16 +60,16 @@ export default async function LibraryPage() {
             <Link 
               href="/" 
               className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors ring-1 ring-white/10"
-              title="Tilbake til dashboard"
+              title={t('common.back')}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </Link>
             <div>
               <h1 className="font-mono text-3xl font-bold tracking-tighter text-[#00FF41]">
-                FOOD LIBRARY
+                {t('library.title')}
               </h1>
               <p className="text-zinc-500 font-mono text-[9px] uppercase tracking-widest mt-0.5">
-                Pilot access: {tier === 'PREMIUM' ? 'ELITE_PILOT' : 'CADET_LEVEL'}
+                {t('library.pilot_access')}: OPERATIONAL
               </p>
             </div>
           </div>
@@ -69,28 +82,28 @@ export default async function LibraryPage() {
         {/* Meal Templates Section */}
         {templates.length > 0 && (
           <section className="space-y-4">
-             <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest border-b border-white/5 pb-2">Lagrede Måltider</h2>
+             <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest border-b border-white/5 pb-2">{t('library.meal_templates')}</h2>
              <MealTemplateList templates={templates} />
           </section>
         )}
 
         {/* Categorized Lists */}
         <section className="space-y-10">
-          <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest border-b border-white/5 pb-2">Dine mest brukte matvarer</h2>
+          <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest border-b border-white/5 pb-2">{t('library.recent_items')}</h2>
           
           {categories.length === 0 ? (
             <div className="py-20 text-center rounded-2xl border-2 border-dashed border-white/5">
-              <p className="font-mono text-xs text-zinc-600 uppercase">Ditt bibliotek er tomt. Søk etter matvarer over for å begynne.</p>
+              <p className="font-mono text-xs text-zinc-600 uppercase">{t('library.no_results')}</p>
             </div>
           ) : (
             categories.sort().map(cat => (
               <div key={cat} className="space-y-4">
                 <h3 className="font-mono text-sm font-bold text-white flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#00FF41]" />
-                  {CATEGORY_LABELS[cat]}
+                  {CATEGORY_LABELS[cat] || cat}
                 </h3>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {categorized[cat].map(item => (
+                  {categorized[cat].map((item: any) => (
                     <Link 
                       key={item.id} 
                       href={`/quick-log?item=${item.id}`}

@@ -164,6 +164,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             <p className="text-xs text-zinc-500 mt-1 uppercase">Push / Pull / Legs</p>
          </Link>
          <Link 
+          href="/training/exercises" 
+          className="flex-1 min-w-[200px] rounded-xl bg-[#3B82F6]/5 p-6 ring-1 ring-[#3B82F6]/20 hover:bg-[#3B82F6]/10 transition-all group"
+         >
+            <h3 className="font-mono text-sm font-bold text-[#3B82F6]">ØVELSESBIBLIOTEK</h3>
+            <p className="text-xs text-zinc-500 mt-1 uppercase">Biomekanisk Database</p>
+         </Link>
+         <Link 
           href="/history" 
           className="flex-1 min-w-[200px] rounded-xl bg-white/5 p-6 ring-1 ring-white/10 hover:bg-white/10 transition-all group"
          >

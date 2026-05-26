@@ -4,8 +4,10 @@ import { useCockpitStore } from '@/store/cockpitStore'
 import { useState } from 'react'
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react'
 import MealBuilder from './MealBuilder'
+import { useI18n } from '@/hooks/useI18n'
 
 export default function MealBuilderStatus() {
+  const { t } = useI18n()
   const mealBuilderQueue = useCockpitStore((state) => state.mealBuilderQueue)
   const [isOpen, setIsOpen] = useState(false)
 
@@ -23,8 +25,9 @@ export default function MealBuilderStatus() {
              {mealBuilderQueue.length}
            </span>
         </div>
-        MÅLTIDSBYGGER
+        {t('builder.title').toUpperCase()}
       </button>
+...
 
       <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" aria-hidden="true" />

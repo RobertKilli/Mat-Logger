@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { getExercisesByCategory, saveWorkoutAsTemplate } from '@/app/(dashboard)/training/actions'
 import { refreshExerciseImage } from '@/app/(dashboard)/training/exerciseActions'
 import { TrainingCategory } from '@prisma/client'
+import { useI18n } from '@/hooks/useI18n'
 
 interface SelectedExercise {
   id: string
@@ -23,6 +24,7 @@ interface WorkoutEntryFormProps {
 }
 
 export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormProps) {
+  const { t } = useI18n()
   const [category, setCategory] = useState<TrainingCategory | null>(null)
   const [intensity, setIntensity] = useState(5)
   const [duration, setDuration] = useState('45')
@@ -174,17 +176,17 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
       {templates.length > 0 && (
         <div className="space-y-4">
           <span className="font-mono text-[10px] uppercase text-zinc-500 tracking-[0.2em] block">
-            SAVED_ROUTINES
+            {t('training.saved_routines')}
           </span>
           <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-            {templates.map(t => (
+            {templates.map(t_item => (
               <button
-                key={t.id}
+                key={t_item.id}
                 type="button"
-                onClick={() => applyTemplate(t)}
+                onClick={() => applyTemplate(t_item)}
                 className="shrink-0 rounded-full px-4 py-2 bg-white/5 border border-white/10 font-mono text-[9px] font-bold text-zinc-400 hover:bg-white/10 hover:text-white transition-all whitespace-nowrap"
               >
-                {t.name.toUpperCase()}
+                {t_item.name.toUpperCase()}
               </button>
             ))}
           </div>
@@ -212,7 +214,7 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
                     : 'bg-white/5 text-zinc-500 ring-white/10 hover:bg-white/10'
                 }`}
               >
-                {cat}
+                {t(`training.${cat.toLowerCase()}` as any)}
               </button>
             ))}
           </div>
@@ -222,14 +224,14 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
         {category && (
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-white/5 pb-2">
-              <h3 className="font-mono text-[10px] uppercase text-zinc-500 tracking-widest">Økt_Innhold</h3>
+              <h3 className="font-mono text-[10px] uppercase text-zinc-500 tracking-widest">{t('training.session_content')}</h3>
               <button
                 type="button"
                 disabled={isLoadingLibrary}
                 onClick={() => setShowLibrary(true)}
                 className="font-mono text-[9px] font-bold text-[#00FF41] uppercase hover:underline disabled:opacity-30"
               >
-                {isLoadingLibrary ? 'HENTER...' : '+ Legg til øvelse'}
+                {isLoadingLibrary ? t('common.loading') : `+ ${t('training.add_exercise')}`}
               </button>
             </div>
 
@@ -283,7 +285,7 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
 
               {selectedExercises.length === 0 && (
                  <div className="py-8 text-center border border-dashed border-zinc-800 rounded-xl">
-                    <p className="font-mono text-[9px] text-zinc-600 uppercase">Ingen øvelser valgt</p>
+                    <p className="font-mono text-[9px] text-zinc-600 uppercase">{t('training.no_exercises')}</p>
                  </div>
               )}
             </div>
@@ -300,7 +302,7 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
                   onChange={(e) => setSaveAsTemplate(e.target.checked)}
                   className="w-4 h-4 rounded border-zinc-800 bg-zinc-900 text-[#00FF41] focus:ring-[#00FF41]"
                 />
-                <span className="font-mono text-[10px] font-bold text-[#00FF41] uppercase tracking-widest">Lagre som ny rutine</span>
+                <span className="font-mono text-[10px] font-bold text-[#00FF41] uppercase tracking-widest">{t('training.save_as_routine')}</span>
              </label>
              
              {saveAsTemplate && (
@@ -308,7 +310,7 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
                   type="text"
                   value={templateName}
                   onChange={(e) => setTemplateName(e.target.value)}
-                  placeholder="NAVN_PÅ_RUTINE (f.eks. Mandag Push)"
+                  placeholder={t('training.routine_placeholder')}
                   className="w-full rounded-xl bg-black/40 border-0 p-3 text-xs font-mono text-white ring-1 ring-[#00FF41]/20 focus:ring-2 focus:ring-[#00FF41] outline-none"
                 />
              )}
@@ -319,7 +321,7 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
         <div className="grid grid-cols-2 gap-8 pt-6 border-t border-white/5">
           <div className="space-y-4">
             <div className="flex justify-between items-end">
-              <label className="font-mono text-[9px] uppercase text-zinc-500 tracking-widest">Intensitet</label>
+              <label className="font-mono text-[9px] uppercase text-zinc-500 tracking-widest">{t('training.intensity')}</label>
               <span className="font-mono text-2xl font-bold text-[#00FF41]">{intensity}</span>
             </div>
             <input
@@ -333,7 +335,7 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
           </div>
 
           <div className="space-y-2">
-            <label className="font-mono text-[9px] uppercase text-zinc-500 tracking-widest block">Varighet</label>
+            <label className="font-mono text-[9px] uppercase text-zinc-500 tracking-widest block">{t('training.duration')}</label>
             <div className="relative">
               <input
                 type="number"
@@ -360,7 +362,7 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
           disabled={isSubmitting || !category || !duration}
           className="w-full rounded-xl bg-[#00FF41] py-5 text-lg font-bold text-black transition-all hover:bg-[#00FF41]/90 disabled:opacity-30 disabled:grayscale shadow-lg"
         >
-          {isSubmitting ? 'INITIATING_TRANSFER...' : 'BEKREFT_MISJONSDATA'}
+          {isSubmitting ? t('training.transferring') : t('training.confirm_mission')}
         </button>
       </form>
 
@@ -369,7 +371,7 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl bg-[#141416] p-6 ring-1 ring-white/10 shadow-2xl space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="font-mono text-sm font-bold text-white uppercase tracking-widest">Øvelses_Bibliotek ({libraryExercises.length})</h3>
+              <h3 className="font-mono text-sm font-bold text-white uppercase tracking-widest">{t('training.exercise_library')} ({libraryExercises.length})</h3>
               <button onClick={() => setShowLibrary(false)} className="text-zinc-500 hover:text-white">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
               </button>
@@ -378,7 +380,7 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
             <input 
               autoFocus
               type="text"
-              placeholder="SØK_ØVELSE..."
+              placeholder={t('training.search_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-xl bg-white/5 border-0 p-4 text-sm font-mono text-white ring-1 ring-white/10 focus:ring-2 focus:ring-[#00FF41] outline-none"
@@ -407,14 +409,14 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
                   <button
                     onClick={(e) => handleRefreshImage(e, ex.id)}
                     className="p-2 rounded-lg hover:bg-white/5 text-zinc-600 hover:text-[#00FF41] transition-colors"
-                    title="Generer nytt AI-bilde"
+                    title={t('training.refresh_image')}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
                   </button>
                 </button>
               ))}
               {filteredLibrary.length === 0 && (
-                <p className="text-center py-4 font-mono text-[10px] text-zinc-600">Ingen treff i {category} kategori</p>
+                <p className="text-center py-4 font-mono text-[10px] text-zinc-600">{t('training.no_results')}</p>
               )}
             </div>
           </div>

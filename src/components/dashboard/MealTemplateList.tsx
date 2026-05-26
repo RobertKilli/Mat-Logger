@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { applyMealTemplate } from '@/app/(dashboard)/quick-log/actions'
 import { MealType, MealTemplate, MealTemplateItem, FoodItem } from '@prisma/client'
 import { useRouter } from 'next/navigation'
+import { useI18n } from '@/hooks/useI18n'
 
 type FullTemplate = MealTemplate & {
   items: (MealTemplateItem & {
@@ -16,6 +17,7 @@ interface MealTemplateListProps {
 }
 
 export default function MealTemplateList({ templates }: MealTemplateListProps) {
+  const { t } = useI18n()
   const [applying, setApplying] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -29,7 +31,7 @@ export default function MealTemplateList({ templates }: MealTemplateListProps) {
       router.push('/')
       router.refresh()
     } else {
-      setError(res.error || 'Kunne ikke loggføre måltid')
+      setError(res.error || t('common.error'))
       setApplying(null)
     }
   }
@@ -43,37 +45,37 @@ export default function MealTemplateList({ templates }: MealTemplateListProps) {
       )}
       
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {templates.map(t => {
-          const totalCals = t.items.reduce((sum, item) => {
+        {templates.map(t_item => {
+          const totalCals = t_item.items.reduce((sum, item) => {
              return sum + (item.food_item.caloriesPer100g * (item.inputAmount / 100))
           }, 0)
 
           return (
             <div 
-              key={t.id} 
+              key={t_item.id} 
               className="group flex flex-col gap-3 rounded-xl bg-[#00FF41]/5 p-4 ring-1 ring-[#00FF41]/20 hover:bg-[#00FF41]/10 transition-all"
             >
               <div className="flex justify-between items-start">
                  <div>
-                    <p className="font-bold text-sm text-white group-hover:text-[#00FF41]">{t.name.toUpperCase()}</p>
-                    <p className="font-mono text-[8px] text-zinc-500 uppercase">{t.items.length} varer • {Math.round(totalCals)} kcal</p>
+                    <p className="font-bold text-sm text-white group-hover:text-[#00FF41]">{t_item.name.toUpperCase()}</p>
+                    <p className="font-mono text-[8px] text-zinc-500 uppercase">{t_item.items.length} varer • {Math.round(totalCals)} kcal</p>
                  </div>
                  <button 
-                   onClick={() => handleApply(t.id)}
+                   onClick={() => handleApply(t_item.id)}
                    disabled={!!applying}
                    className="rounded-full bg-[#00FF41] px-3 py-1 font-mono text-[8px] font-bold text-black hover:scale-105 transition-all disabled:opacity-30"
                  >
-                   {applying === t.id ? 'LOGGER...' : 'LOGG NÅ'}
+                   {applying === t_item.id ? t('library.loading') : t('library.log_now')}
                  </button>
               </div>
               
               <div className="flex flex-wrap gap-1">
-                 {t.items.slice(0, 3).map((item) => (
+                 {t_item.items.slice(0, 3).map((item) => (
                     <span key={item.id} className="text-[7px] bg-black/40 px-1.5 py-0.5 rounded text-zinc-400 font-mono">
                       {item.food_item.name}
                     </span>
                  ))}
-                 {t.items.length > 3 && <span className="text-[7px] text-zinc-600 font-mono">+{t.items.length - 3}</span>}
+                 {t_item.items.length > 3 && <span className="text-[7px] text-zinc-600 font-mono">+{t_item.items.length - 3}</span>}
               </div>
             </div>
           )

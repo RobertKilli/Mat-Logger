@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode'
 import { fetchProductByBarcode } from '@/app/(dashboard)/library/scannerActions'
 import { useRouter } from 'next/navigation'
+import { useI18n } from '@/hooks/useI18n'
 
 interface BarcodeScannerProps {
   onClose: () => void
@@ -11,6 +12,7 @@ interface BarcodeScannerProps {
 }
 
 export default function BarcodeScanner({ onClose, onScan }: BarcodeScannerProps) {
+  const { t } = useI18n()
   const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const router = useRouter()
@@ -55,14 +57,14 @@ export default function BarcodeScanner({ onClose, onScan }: BarcodeScannerProps)
         router.push(`/quick-log?item=${res.data.id}`)
         onClose()
       } else {
-        setError(res.error || 'Kunne ikke finne produktet.')
+        setError(res.error || t('common.error'))
         setIsProcessing(false)
         scanner.resume()
       }
     }
 
     function onScanError(err: any) {
-      // Quietly ignore scan errors (they happen every frame if no barcode found)
+      // Quietly ignore scan errors
     }
 
     return () => {
@@ -70,12 +72,12 @@ export default function BarcodeScanner({ onClose, onScan }: BarcodeScannerProps)
         scannerRef.current.clear().catch(e => console.error('Scanner cleanup error', e))
       }
     }
-  }, [onClose, isProcessing, router])
+  }, [onClose, isProcessing, router, onScan, t])
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-mono text-sm font-bold text-white uppercase tracking-widest">SCAN_BARCODE</h3>
+        <h3 className="font-mono text-sm font-bold text-white uppercase tracking-widest">{t('library.scanner_title')}</h3>
         <button onClick={onClose} className="text-zinc-500 hover:text-white">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
@@ -90,7 +92,7 @@ export default function BarcodeScanner({ onClose, onScan }: BarcodeScannerProps)
            <div className="h-2 w-2 animate-bounce rounded-full bg-[#00FF41]"></div>
            <div className="h-2 w-2 animate-bounce rounded-full bg-[#00FF41] [animation-delay:-.3s]"></div>
            <div className="h-2 w-2 animate-bounce rounded-full bg-[#00FF41] [animation-delay:-.5s]"></div>
-           <span className="font-mono text-[10px] text-[#00FF41] uppercase ml-2">Analyserer bio-data...</span>
+           <span className="font-mono text-[10px] text-[#00FF41] uppercase ml-2">{t('library.analyzing_bio')}</span>
         </div>
       )}
 
@@ -101,7 +103,7 @@ export default function BarcodeScanner({ onClose, onScan }: BarcodeScannerProps)
       )}
 
       <p className="text-center font-mono text-[8px] text-zinc-600 uppercase tracking-tighter">
-        Hold kameraet rett over strekkoden på varen
+        {t('library.scanner_desc')}
       </p>
     </div>
   )

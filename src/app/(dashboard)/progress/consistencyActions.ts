@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { startOfDay, subDays, format } from 'date-fns'
+import { revalidatePath } from 'next/cache'
 
 export async function getConsistencyData() {
   const supabase = await createClient()
@@ -81,6 +82,10 @@ export async function uploadDailyPhoto(imageUrl: string, notes?: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
+  if (!imageUrl.startsWith('http')) {
+    return { error: 'Invalid image URL' }
+  }
+
   try {
     await prisma.dailyPhoto.create({
       data: {
@@ -89,6 +94,7 @@ export async function uploadDailyPhoto(imageUrl: string, notes?: string) {
         notes
       }
     })
+    revalidatePath('/progress')
     return { success: true }
   } catch (e) {
     return { error: 'Failed to save photo' }

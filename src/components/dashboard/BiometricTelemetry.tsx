@@ -2,22 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { getLatestBiometrics } from '@/app/(dashboard)/profile/garminActions'
+import { useI18n } from '@/hooks/useI18n'
 
-interface BiometricCardProps {
-  label: string
-  value: string | number
-  unit: string
-  status?: 'OPTIMAL' | 'STRESSED' | 'CRITICAL'
-}
-
-const TYPE_MAP: Record<string, { label: string, unit: string }> = {
-  RESTING_HR: { label: 'RESTING_HR', unit: 'BPM' },
-  SLEEP_SCORE: { label: 'SLEEP_SCORE', unit: '/100' },
-  STRESS_LEVEL: { label: 'STRESS_LEVEL', unit: 'LVL' },
-  BODY_BATTERY: { label: 'BODY_BATTERY', unit: '%' },
+const TYPE_MAP: Record<string, string> = {
+  RESTING_HR: 'biometrics.resting_hr',
+  SLEEP_SCORE: 'biometrics.sleep_score',
+  STRESS_LEVEL: 'biometrics.stress_level',
+  BODY_BATTERY: 'biometrics.body_battery',
 }
 
 export default function BiometricTelemetry() {
+  const { t } = useI18n()
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -58,7 +53,7 @@ export default function BiometricTelemetry() {
   return (
     <section className="space-y-4">
       <div className="flex items-baseline justify-between px-1">
-         <h2 className="font-mono text-[10px] uppercase text-zinc-500 tracking-widest">Biometrisk Telemetri (Garmin)</h2>
+         <h2 className="font-mono text-[10px] uppercase text-zinc-500 tracking-widest">Biometric Telemetry (Garmin)</h2>
          <span className="font-mono text-[8px] text-[#00FF41] animate-pulse">● LIVE_FEED</span>
       </div>
       
@@ -67,7 +62,9 @@ export default function BiometricTelemetry() {
           <div key={bio.type} className="rounded-xl bg-[#141416] p-4 ring-1 ring-white/10 shadow-lg relative overflow-hidden group hover:ring-[#00FF41]/30 transition-all">
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-zinc-700 to-transparent group-hover:via-[#00FF41]/50" />
             
-            <p className="font-mono text-[8px] text-zinc-600 uppercase mb-2 tracking-tighter">{bio.type}</p>
+            <p className="font-mono text-[8px] text-zinc-600 uppercase mb-2 tracking-tighter">
+              {t(TYPE_MAP[bio.type] as any).toUpperCase()}
+            </p>
             <div className="flex items-baseline gap-1">
                <span className="font-mono text-xl font-bold text-white tracking-tighter">{bio.value}</span>
                <span className="font-mono text-[8px] text-zinc-500 uppercase">{bio.unit}</span>

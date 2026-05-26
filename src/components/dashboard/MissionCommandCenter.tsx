@@ -1,12 +1,14 @@
 'use client'
 
 import { MissionBriefing } from '@/lib/metabolism/guidance'
+import { useI18n } from '@/hooks/useI18n'
 
 interface MissionCommandCenterProps {
   briefing: MissionBriefing
 }
 
 export default function MissionCommandCenter({ briefing }: MissionCommandCenterProps) {
+  const { t } = useI18n()
   const typeColors = {
     OPTIMAL: 'border-[#00FF41] bg-[#00FF41]/5 text-[#00FF41]',
     CAUTION: 'border-yellow-500/50 bg-yellow-500/5 text-yellow-500',
@@ -27,7 +29,7 @@ export default function MissionCommandCenter({ briefing }: MissionCommandCenterP
         <div className="flex items-center gap-3">
           <span className="font-mono text-xl font-bold">{icons[briefing.type]}</span>
           <div>
-            <h2 className="font-mono text-xs font-bold uppercase tracking-[0.2em]">Mission_Briefing</h2>
+            <h2 className="font-mono text-xs font-bold uppercase tracking-[0.2em]">{t('dashboard.mission_command')}</h2>
             <p className="font-mono text-[10px] opacity-70 uppercase tracking-widest">{briefing.title}</p>
           </div>
         </div>
@@ -40,7 +42,7 @@ export default function MissionCommandCenter({ briefing }: MissionCommandCenterP
 
       {briefing.actionItem && (
         <div className="rounded-lg bg-black/20 p-4 border border-current/20">
-           <p className="font-mono text-[9px] uppercase tracking-widest mb-1 opacity-60">Anbefalt Handling:</p>
+           <p className="font-mono text-[9px] uppercase tracking-widest mb-1 opacity-60">PRIORITY_ACTION:</p>
            <p className="font-mono text-xs font-bold italic">"{briefing.actionItem}"</p>
         </div>
       )}

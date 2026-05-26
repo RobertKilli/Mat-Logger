@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { format } from 'date-fns'
+import { useI18n } from '@/hooks/useI18n'
 
 interface StrengthChartProps {
   exerciseName: string
@@ -9,6 +10,7 @@ interface StrengthChartProps {
 }
 
 export default function StrengthChart({ exerciseName, data }: StrengthChartProps) {
+  const { t } = useI18n()
   const chartHeight = 120
   const chartWidth = 400
 
@@ -37,13 +39,13 @@ export default function StrengthChart({ exerciseName, data }: StrengthChartProps
     <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 hover:bg-white/[0.07] transition-all">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="font-mono text-[8px] text-zinc-500 uppercase tracking-widest">Est. 1RM Trend</p>
+          <p className="font-mono text-[8px] text-zinc-500 uppercase tracking-widest">{t('progress.est_1rm')}</p>
           <h3 className="font-bold text-sm text-white">{exerciseName.toUpperCase()}</h3>
         </div>
         <div className="text-right">
           <p className="font-mono text-lg font-bold text-[#3B82F6]">{latestRM}kg</p>
           <p className={`font-mono text-[8px] uppercase ${diff > 0 ? 'text-[#00FF41]' : 'text-zinc-500'}`}>
-            {diff > 0 ? `+${diff.toFixed(1)}kg` : 'Stabil'}
+            {diff > 0 ? `+${diff.toFixed(1)}kg` : t('progress.stable')}
           </p>
         </div>
       </div>
@@ -80,8 +82,8 @@ export default function StrengthChart({ exerciseName, data }: StrengthChartProps
       </div>
       
       <div className="mt-2 flex justify-between">
-         <span className="font-mono text-[7px] text-zinc-600 uppercase">{format(data[0].date, 'd. MMM')}</span>
-         <span className="font-mono text-[7px] text-zinc-600 uppercase">{format(data[data.length - 1].date, 'd. MMM')}</span>
+         <span className="font-mono text-[7px] text-zinc-600 uppercase">{format(new Date(data[0].date), 'd. MMM')}</span>
+         <span className="font-mono text-[7px] text-zinc-600 uppercase">{format(new Date(data[data.length - 1].date), 'd. MMM')}</span>
       </div>
     </div>
   )

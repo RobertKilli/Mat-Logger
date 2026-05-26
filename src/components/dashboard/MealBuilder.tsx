@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useCockpitStore } from '@/store/cockpitStore'
 import { saveMealAsTemplate } from '@/app/(dashboard)/quick-log/actions'
 import { calculateNutrition } from '@/lib/metabolism/nutrition'
+import { useI18n } from '@/hooks/useI18n'
 
 interface MealBuilderProps {
   onCancel: () => void
@@ -11,6 +12,7 @@ interface MealBuilderProps {
 }
 
 export default function MealBuilder({ onCancel, onSuccess }: MealBuilderProps) {
+  const { t } = useI18n()
   const { mealBuilderQueue, removeFromMealBuilder, clearMealBuilder } = useCockpitStore()
   const [templateName, setTemplateName] = useState('')
   const [isSaving, setIsSubmitting] = useState(false)
@@ -44,7 +46,7 @@ export default function MealBuilder({ onCancel, onSuccess }: MealBuilderProps) {
       clearMealBuilder()
       onSuccess()
     } else {
-      setError(res.error || 'Feil ved lagring')
+      setError(res.error || t('common.error'))
       setIsSubmitting(false)
     }
   }
@@ -52,7 +54,7 @@ export default function MealBuilder({ onCancel, onSuccess }: MealBuilderProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-mono text-sm font-bold text-white uppercase tracking-widest">Måltids_Bygger</h3>
+        <h3 className="font-mono text-sm font-bold text-white uppercase tracking-widest">{t('builder.title')}</h3>
         <button onClick={onCancel} className="text-zinc-500 hover:text-white">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
@@ -60,7 +62,7 @@ export default function MealBuilder({ onCancel, onSuccess }: MealBuilderProps) {
 
       {mealBuilderQueue.length === 0 ? (
         <div className="py-12 text-center border border-dashed border-zinc-800 rounded-2xl">
-          <p className="font-mono text-[10px] text-zinc-600 uppercase">Søk etter varer og legg dem til i byggeren</p>
+          <p className="font-mono text-[10px] text-zinc-600 uppercase">{t('builder.empty_desc')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -104,15 +106,15 @@ export default function MealBuilder({ onCancel, onSuccess }: MealBuilderProps) {
               type="text"
               value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
-              placeholder="NAVN_PÅ_MAL (f.eks. Havre-Lunch)"
+              placeholder={t('builder.template_placeholder')}
               className="w-full rounded-lg bg-black/40 border-0 p-3 text-xs font-mono text-white ring-1 ring-[#00FF41]/20 focus:ring-2 focus:ring-[#00FF41] outline-none"
             />
             <button
               onClick={handleSaveTemplate}
               disabled={isSaving || !templateName.trim()}
-              className="w-full rounded-lg bg-[#00FF41] py-3 text-xs font-bold text-black hover:bg-[#00FF41]/90 disabled:opacity-30 transition-all"
+              className="w-full rounded-lg bg-[#00FF41] py-3 text-xs font-bold text-black hover:bg-[#00FF41]/90 disabled:opacity-30 transition-all uppercase"
             >
-              {isSaving ? 'LAGRER_MAL...' : 'LAGRE SOM MÅLTIDSMAL'}
+              {isSaving ? t('builder.saving') : t('builder.save_template')}
             </button>
           </div>
         </div>
