@@ -84,7 +84,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           weight: dailyData.weight ?? 85, 
           proteinGoal: dailyData.proteinGoal ?? 180,
           calorieGoal: dailyData.calorieGoal ?? 2500,
-          goal: dailyData.goal ?? 'MAINTAIN'
+          goal: dailyData.goal ?? 'MAINTAIN',
+          language: dailyData.language ?? 'NB'
         }}
         dailyTotals={dailyData}
         recentWorkouts={recentWorkouts}

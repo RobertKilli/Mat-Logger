@@ -1,9 +1,7 @@
-'use server'
-
 import { createClient } from '@/utils/supabase/server'
 import { getSafePrisma } from '@/lib/prisma'
 import { startOfDay, endOfDay, parseISO } from 'date-fns'
-import { UserGoal } from '@prisma/client'
+import { UserGoal, Language } from '@prisma/client'
 
 export async function getDailyTotals(dateStr?: string) {
   const supabase = await createClient()
@@ -19,6 +17,7 @@ export async function getDailyTotals(dateStr?: string) {
     proteinGoal: 180,
     calorieGoal: 2500,
     goal: 'MAINTAIN' as UserGoal,
+    language: 'NB' as Language,
     isSimulated: true
   }
 
@@ -35,10 +34,10 @@ export async function getDailyTotals(dateStr?: string) {
       return { error: 'Unauthorized' }
     }
 
-    // Fetch user goals first
+    // Fetch user goals and settings first
     const dbUser = await prisma.user.findUnique({
       where: { id: authUser.id },
-      select: { calorie_goal: true, protein_goal: true, goal: true }
+      select: { calorie_goal: true, protein_goal: true, goal: true, language: true, weight: true }
     })
 
     const targetDate = dateStr ? parseISO(dateStr) : new Date()
@@ -73,9 +72,11 @@ export async function getDailyTotals(dateStr?: string) {
           carbs: Number(totals.carbs.toFixed(1)),
           fat: Number(totals.fat.toFixed(1)),
           calories: Math.round(totals.calories),
+          weight: dbUser?.weight || null,
           proteinGoal: dbUser?.protein_goal || 0,
           calorieGoal: dbUser?.calorie_goal || 2500,
           goal: (dbUser?.goal || 'MAINTAIN') as UserGoal,
+          language: (dbUser?.language || 'NB') as Language,
           recentLogs: logs.map(l => ({
             id: l.id,
             name: l.food_item.name,
