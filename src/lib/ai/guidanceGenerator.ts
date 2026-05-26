@@ -2,9 +2,13 @@ import OpenAI from 'openai'
 import { BODY_COCKPIT_SYSTEM_PROMPT } from './prompts'
 import { BiometricLog } from '@prisma/client'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+function getOpenAI() {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY_MISSING')
+  }
+  return new OpenAI({ apiKey })
+}
 
 export interface AIMissionBriefing {
   status: 'OPTIMAL' | 'STABLE' | 'ELEVATED' | 'HIGH' | 'CRITICAL'
@@ -22,6 +26,7 @@ export async function generateAIGuidance(
   recentWorkouts: { intensity: number; logged_at: Date }[]
 ): Promise<AIMissionBriefing | null> {
   try {
+    const openai = getOpenAI()
     const dataContext = {
       telemetry: biometrics.map(b => ({ type: b.type, value: b.value, timestamp: b.logged_at })),
       nutrition: {
@@ -45,6 +50,10 @@ export async function generateAIGuidance(
 
     return JSON.parse(content) as AIMissionBriefing
   } catch (error) {
+    if (error instanceof Error && error.message === 'OPENAI_API_KEY_MISSING') {
+      console.warn('BODY_COCKPIT_OS: Skipping AI guidance - API key missing (likely build time).')
+      return null
+    }
     console.error('BODY_COCKPIT_OS: AI Guidance failure.', error)
     return null
   }

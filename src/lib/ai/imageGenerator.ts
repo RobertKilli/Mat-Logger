@@ -1,11 +1,16 @@
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+function getOpenAI() {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY_MISSING')
+  }
+  return new OpenAI({ apiKey })
+}
 
 export async function generateExerciseImage(exerciseName: string, category: string) {
   try {
+    const openai = getOpenAI()
     const prompt = `A highly detailed, professional fitness illustration of a person performing the exercise "${exerciseName}". 
     Style: Cyber-industrial / Body Cockpit aesthetic. 
     Colors: Deep dark backgrounds, zinc-colored equipment, and vibrant neon green (#00FF41) highlights on the targeted muscle groups. 
@@ -22,6 +27,10 @@ export async function generateExerciseImage(exerciseName: string, category: stri
 
     return response.data?.[0]?.url ?? null
   } catch (error) {
+    if (error instanceof Error && error.message === 'OPENAI_API_KEY_MISSING') {
+      console.warn('BODY_COCKPIT_OS: Skipping image generation - API key missing.')
+      return null
+    }
     console.error('AI Image Generation Error:', error)
     return null
   }
