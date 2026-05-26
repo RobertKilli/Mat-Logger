@@ -2,15 +2,19 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode'
+import { fetchProductByBarcode } from '@/app/(dashboard)/library/scannerActions'
+import { useRouter } from 'next/navigation'
 
 interface BarcodeScannerProps {
-  onScan: (decodedText: string) => void
   onClose: () => void
+  onScan?: (code: string) => void
 }
 
-export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null)
+export default function BarcodeScanner({ onClose, onScan }: BarcodeScannerProps) {
   const [error, setError] = useState<string | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const router = useRouter()
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null)
 
   useEffect(() => {
     // Initialize scanner
@@ -19,57 +23,86 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       { 
         fps: 10, 
         qrbox: { width: 250, height: 150 },
-        aspectRatio: 1.777778,
-        formatsToSupport: [ 
-            Html5QrcodeSupportedFormats.EAN_13, 
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E
         ]
       },
       /* verbose= */ false
     )
 
-    scanner.render(
-      (decodedText) => {
-        // Success
-        scanner.clear().then(() => {
-          onScan(decodedText)
-        })
-      },
-      (errorMessage) => {
-        // We don't want to show every frame error, but maybe log it
-      }
-    )
-
+    scanner.render(onScanSuccess, onScanError)
     scannerRef.current = scanner
+
+    async function onScanSuccess(decodedText: string) {
+      if (isProcessing) return
+      
+      setIsProcessing(true)
+      
+      if (onScan) {
+        onScan(decodedText)
+        return
+      }
+
+      scanner.pause(true) // Pause scanning while processing
+
+      const res = await fetchProductByBarcode(decodedText)
+
+      if (res.data) {
+        // Redirect to quick-log for the found/created item
+        router.push(`/quick-log?item=${res.data.id}`)
+        onClose()
+      } else {
+        setError(res.error || 'Kunne ikke finne produktet.')
+        setIsProcessing(false)
+        scanner.resume()
+      }
+    }
+
+    function onScanError(err: any) {
+      // Quietly ignore scan errors (they happen every frame if no barcode found)
+    }
 
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.clear().catch(err => console.error("Failed to clear scanner", err))
+        scannerRef.current.clear().catch(e => console.error('Scanner cleanup error', e))
       }
     }
-  }, [onScan])
+  }, [onClose, isProcessing, router])
 
   return (
-    <div className="space-y-4">
-      <div id="barcode-reader" className="overflow-hidden rounded-xl bg-black ring-1 ring-white/10" />
-      
-      <div className="flex flex-col items-center gap-2">
-         <p className="font-mono text-[10px] text-zinc-500 uppercase animate-pulse">
-           Søker etter strekkode...
-         </p>
-         <button
-            onClick={onClose}
-            className="mt-4 rounded-xl bg-white/5 px-8 py-3 font-mono text-xs font-bold text-white hover:bg-white/10 transition-all"
-         >
-            AVBRYT SKANNING
-         </button>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-mono text-sm font-bold text-white uppercase tracking-widest">SCAN_BARCODE</h3>
+        <button onClick={onClose} className="text-zinc-500 hover:text-white">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
       </div>
 
-      {error && (
-        <p className="text-center font-mono text-xs text-red-500 uppercase">{error}</p>
+      <div className="overflow-hidden rounded-2xl bg-black/40 ring-1 ring-white/10">
+        <div id="barcode-reader" className="w-full"></div>
+      </div>
+
+      {isProcessing && (
+        <div className="flex items-center justify-center gap-2 py-4">
+           <div className="h-2 w-2 animate-bounce rounded-full bg-[#00FF41]"></div>
+           <div className="h-2 w-2 animate-bounce rounded-full bg-[#00FF41] [animation-delay:-.3s]"></div>
+           <div className="h-2 w-2 animate-bounce rounded-full bg-[#00FF41] [animation-delay:-.5s]"></div>
+           <span className="font-mono text-[10px] text-[#00FF41] uppercase ml-2">Analyserer bio-data...</span>
+        </div>
       )}
+
+      {error && (
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 font-mono text-[9px] uppercase text-center">
+          ⚠️ {error}
+        </div>
+      )}
+
+      <p className="text-center font-mono text-[8px] text-zinc-600 uppercase tracking-tighter">
+        Hold kameraet rett over strekkoden på varen
+      </p>
     </div>
   )
 }

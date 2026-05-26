@@ -48,8 +48,23 @@ model User {
   weight_logs       WeightLog[]
   workout_templates WorkoutTemplate[]
   meal_templates    MealTemplate[]
+  daily_photos      DailyPhoto[]
 
   @@map("users")
+}
+
+model DailyPhoto {
+  id         String   @id @default(uuid())
+  user_id    String
+  image_url  String
+  notes      String?
+  logged_at  DateTime @default(now())
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, logged_at])
+  @@map("daily_photos")
 }
 
 model MealTemplate {

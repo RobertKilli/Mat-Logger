@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { searchFoodItems, forkFoodItem, deleteFoodItem } from '@/app/(dashboard)/library/actions'
+import { getRecentFoodItems } from '@/app/(dashboard)/library/recentActions'
 import Link from 'next/link'
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react'
 import ForkNudgeForm from '@/components/forms/ForkNudgeForm'
@@ -29,11 +30,19 @@ interface FoodItem {
 export default function FoodSearch() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<{ internal: FoodItem[], external: FoodItem[], isPremium?: boolean }>({ internal: [], external: [] })
+  const [recentItems, setRecentItems] = useState<FoodItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [forkItem, setForkItem] = useState<FoodItem | null>(null)
   const [isAddingNew, setIsAddingNew] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
+
+  // Fetch recent items on mount
+  useEffect(() => {
+    getRecentFoodItems().then(res => {
+      if (res.data) setRecentItems(res.data as any)
+    })
+  }, [])
 
   useEffect(() => {
     setSearchError(null)
@@ -122,6 +131,15 @@ export default function FoodSearch() {
 
       {/* Results Sections */}
       <div className="space-y-8">
+        {query.length < 2 && recentItems.length > 0 && (
+          <div className="space-y-3">
+             <h3 className="font-mono text-[10px] text-[#00FF41] uppercase tracking-widest ml-1 opacity-70">Nylig brukte varer</h3>
+             {recentItems.map(item => (
+                <FoodItemRow key={item.id} item={item} onFork={() => setForkItem(item)} isInternal={item.user_id !== null} />
+             ))}
+          </div>
+        )}
+
         {results.internal.length > 0 && (
           <div className="space-y-3">
              <h3 className="font-mono text-[10px] text-zinc-600 uppercase tracking-widest ml-1">Verifisert i ditt cockpit</h3>
@@ -161,10 +179,6 @@ export default function FoodSearch() {
               STREKKODE_SKANNER
             </DialogTitle>
             <BarcodeScanner 
-               onScan={(code) => {
-                 setQuery(code)
-                 setIsScanning(false)
-               }} 
                onClose={() => setIsScanning(false)} 
             />
           </DialogPanel>
@@ -174,7 +188,7 @@ export default function FoodSearch() {
       <Dialog open={!!forkItem} onClose={() => setForkItem(null)} className="relative z-50">
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogPanel className="mx-auto max-w-md w-full rounded-2xl bg-[#141416] p-8 ring-1 ring-white/10 shadow-2xl">
+          <DialogPanel className="mx-auto max-md w-full rounded-2xl bg-[#141416] p-8 ring-1 ring-white/10 shadow-2xl">
             <DialogTitle className="font-mono text-xl font-bold text-[#00FF41] uppercase tracking-tight mb-6">
               Korriger & Lagre
             </DialogTitle>
@@ -195,7 +209,7 @@ export default function FoodSearch() {
       <Dialog open={isAddingNew} onClose={() => setIsAddingNew(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogPanel className="mx-auto max-w-md w-full rounded-2xl bg-[#141416] p-8 ring-1 ring-white/10 shadow-2xl">
+          <DialogPanel className="mx-auto max-md w-full rounded-2xl bg-[#141416] p-8 ring-1 ring-white/10 shadow-2xl">
             <DialogTitle className="font-mono text-xl font-bold text-[#00FF41] uppercase tracking-tight mb-6">
               Ny matvare
             </DialogTitle>

@@ -6,6 +6,7 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { executeLogAction } from '@/lib/metabolism/syncService'
 import { useRouter } from 'next/navigation'
 import { getExercisesByCategory, saveWorkoutAsTemplate } from '@/app/(dashboard)/training/actions'
+import { refreshExerciseImage } from '@/app/(dashboard)/training/exerciseActions'
 import { TrainingCategory } from '@prisma/client'
 
 interface SelectedExercise {
@@ -29,7 +30,7 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
   const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null)
   
   // Exercise Library State
-  const [libraryExercises, setLibraryExercises] = useState<{id: string, name: string}[]>([])
+  const [libraryExercises, setLibraryExercises] = useState<{id: string, name: string, image_url?: string | null}[]>([])
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(false)
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -112,6 +113,16 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
     setSelectedExercises(selectedExercises.map(ex => 
       ex.id === id ? { ...ex, [field]: value } : ex
     ))
+  }
+
+  async function handleRefreshImage(e: React.MouseEvent, id: string) {
+    e.stopPropagation()
+    const res = await refreshExerciseImage(id)
+    if (res.success && res.imageUrl) {
+      setLibraryExercises(prev => prev.map(ex => 
+        ex.id === id ? { ...ex, image_url: res.imageUrl } : ex
+      ))
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -373,15 +384,33 @@ export default function WorkoutEntryForm({ templates = [] }: WorkoutEntryFormPro
               className="w-full rounded-xl bg-white/5 border-0 p-4 text-sm font-mono text-white ring-1 ring-white/10 focus:ring-2 focus:ring-[#00FF41] outline-none"
             />
 
-            <div className="max-h-60 overflow-y-auto space-y-2 custom-scrollbar">
+            <div className="max-h-80 overflow-y-auto space-y-2 custom-scrollbar">
               {filteredLibrary.map(ex => (
                 <button
                   key={ex.id}
                   type="button"
                   onClick={() => addExercise(ex)}
-                  className="w-full text-left rounded-lg p-3 hover:bg-[#00FF41]/10 group transition-all"
+                  className="w-full text-left rounded-xl p-2 hover:bg-[#00FF41]/10 group transition-all flex items-center gap-3 border border-transparent hover:border-[#00FF41]/20"
                 >
-                  <span className="font-mono text-xs text-zinc-400 group-hover:text-[#00FF41]">{ex.name}</span>
+                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-zinc-900 ring-1 ring-white/10">
+                    {ex.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={ex.image_url} alt="" className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center font-mono text-[6px] text-zinc-800">NO_IMG</div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-xs text-zinc-300 group-hover:text-white truncate">{ex.name.toUpperCase()}</p>
+                    <p className="font-mono text-[7px] text-zinc-600 uppercase">Mission: {category}</p>
+                  </div>
+                  <button
+                    onClick={(e) => handleRefreshImage(e, ex.id)}
+                    className="p-2 rounded-lg hover:bg-white/5 text-zinc-600 hover:text-[#00FF41] transition-colors"
+                    title="Generer nytt AI-bilde"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                  </button>
                 </button>
               ))}
               {filteredLibrary.length === 0 && (
