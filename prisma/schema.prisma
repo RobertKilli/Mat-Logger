@@ -209,6 +209,7 @@ model FoodItem {
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   food_logs  FoodLog[]
+  meal_template_items MealTemplateItem[]
 
   user User? @relation(fields: [user_id], references: [id])
 
