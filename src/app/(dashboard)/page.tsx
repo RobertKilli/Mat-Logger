@@ -6,6 +6,7 @@ import MealTimer from '@/components/dashboard/MealTimer'
 import DailyLogList from '@/components/dashboard/DailyLogList'
 import BiometricTelemetry from '@/components/dashboard/BiometricTelemetry'
 import MissionCommandCenter from '@/components/dashboard/MissionCommandCenter'
+import TacticalFueling from '@/components/dashboard/TacticalFueling'
 import HydrateCockpit from '@/components/dashboard/HydrateCockpit'
 import Link from 'next/link'
 import { getDailyTotals } from './actions'
@@ -15,6 +16,7 @@ import { generateAIGuidance } from '@/lib/ai/guidanceGenerator'
 import { format, addDays, subDays, isToday, parseISO } from 'date-fns'
 import { nb } from 'date-fns/locale'
 import { prisma, getSafePrisma } from '@/lib/prisma'
+import { getI18nServer } from '@/lib/i18n/server'
 
 interface DashboardPageProps {
   searchParams: Promise<{ date?: string }>
@@ -22,6 +24,7 @@ interface DashboardPageProps {
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const supabase = await createClient()
+  const { t } = await getI18nServer()
 
   const {
     data: { user },
@@ -135,7 +138,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       <section className="grid gap-8 md:grid-cols-2">
         <div className="space-y-4">
-          <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest">Klarhets-indikatorer</h2>
+          <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest">{t('dashboard.indicators')}</h2>
           <div className="grid grid-cols-2 gap-4">
               <GlycogenClock />
               <CNSMeter />
@@ -144,11 +147,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               </div>
           </div>
           
+          <TacticalFueling />
           <BiometricTelemetry />
         </div>
 
         <div className="space-y-4">
-          <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest">Ernæringsstatus</h2>
+          <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest">{t('dashboard.nutrition')}</h2>
           <div className="rounded-2xl bg-[#141416] p-6 ring-1 ring-white/10 shadow-lg h-full">
               <DailySummary serverData={dailyData} isHistorical={!isCurrentToday} />
           </div>
@@ -157,7 +161,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       {/* Operation Log */}
       <section className="space-y-4">
-        <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest">Dagbok for {displayDate}</h2>
+        <h2 className="font-mono text-xs uppercase text-zinc-500 tracking-widest">{t('dashboard.daily_log')} {displayDate}</h2>
         <DailyLogList logs={dailyData.recentLogs} isHistorical={!isCurrentToday} />
       </section>
 
@@ -166,15 +170,15 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           href="/library" 
           className="flex-1 min-w-[200px] rounded-xl bg-white/5 p-6 ring-1 ring-white/10 hover:bg-white/10 transition-all group"
          >
-            <h3 className="font-mono text-sm font-bold text-[#00FF41]">ÅPNE BIBLIOTEK</h3>
-            <p className="text-xs text-zinc-500 mt-1 uppercase">Søk & Logg drivstoff</p>
+            <h3 className="font-mono text-sm font-bold text-[#00FF41]">{t('navigation.library')}</h3>
+            <p className="text-xs text-zinc-500 mt-1 uppercase">{t('navigation.library_desc')}</p>
          </Link>
          <Link 
           href="/training" 
           className="flex-1 min-w-[200px] rounded-xl bg-white/5 p-6 ring-1 ring-white/10 hover:bg-white/10 transition-all group"
          >
-            <h3 className="font-mono text-sm font-bold text-[#3B82F6]">LOGG ØKT</h3>
-            <p className="text-xs text-zinc-500 mt-1 uppercase">Push / Pull / Legs</p>
+            <h3 className="font-mono text-sm font-bold text-[#3B82F6]">{t('navigation.log_workout')}</h3>
+            <p className="text-xs text-zinc-500 mt-1 uppercase">{t('navigation.log_workout_desc')}</p>
          </Link>
          <Link 
           href="/training/exercises" 
@@ -187,22 +191,22 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           href="/history" 
           className="flex-1 min-w-[200px] rounded-xl bg-white/5 p-6 ring-1 ring-white/10 hover:bg-white/10 transition-all group"
          >
-            <h3 className="font-mono text-sm font-bold text-[#F59E0B]">OPPERASJONSLOGG</h3>
-            <p className="text-xs text-zinc-500 mt-1 uppercase">Se historiske data</p>
+            <h3 className="font-mono text-sm font-bold text-[#F59E0B]">{t('navigation.history')}</h3>
+            <p className="text-xs text-zinc-500 mt-1 uppercase">{t('navigation.history_desc')}</p>
          </Link>
          <Link 
           href="/profile" 
           className="flex-1 min-w-[200px] rounded-xl bg-white/5 p-6 ring-1 ring-white/10 hover:bg-white/10 transition-all group"
          >
-            <h3 className="font-mono text-sm font-bold text-white">PILOT PROFIL</h3>
-            <p className="text-xs text-zinc-500 mt-1 uppercase">Konfigurer baseline</p>
+            <h3 className="font-mono text-sm font-bold text-white">{t('navigation.profile')}</h3>
+            <p className="text-xs text-zinc-500 mt-1 uppercase">{t('navigation.profile_desc')}</p>
          </Link>
          <Link 
           href="/progress" 
           className="flex-1 min-w-[200px] rounded-xl bg-[#00FF41]/5 p-6 ring-1 ring-[#00FF41]/20 hover:bg-[#00FF41]/10 transition-all group"
          >
-            <h3 className="font-mono text-sm font-bold text-[#00FF41]">PROGRESJON</h3>
-            <p className="text-xs text-zinc-500 mt-1 uppercase">Analyser & Vektgraf</p>
+            <h3 className="font-mono text-sm font-bold text-[#00FF41]">{t('navigation.progress')}</h3>
+            <p className="text-xs text-zinc-500 mt-1 uppercase">{t('navigation.progress_desc')}</p>
          </Link>
       </section>
     </main>

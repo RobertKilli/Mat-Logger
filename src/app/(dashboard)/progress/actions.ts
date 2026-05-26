@@ -6,14 +6,14 @@ import { startOfDay, subDays } from 'date-fns'
 
 export async function getWeightHistory(days: number = 30) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
 
-  if (!user) return { error: 'Unauthorized', data: [] }
+  if (!authUser) return { error: 'Unauthorized', data: [] }
 
   try {
     const logs = await prisma.weightLog.findMany({
       where: {
-        user_id: user.id,
+        user_id: authUser.id,
         logged_at: {
           gte: startOfDay(subDays(new Date(), days))
         }
@@ -32,21 +32,21 @@ export async function getWeightHistory(days: number = 30) {
 
 export async function logWeight(weight: number) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
 
-  if (!user) return { error: 'Unauthorized' }
+  if (!authUser) return { error: 'Unauthorized' }
 
   try {
     // 1. Update User current weight
     await prisma.user.update({
-      where: { id: user.id },
+      where: { id: authUser.id },
       data: { weight }
     })
 
     // 2. Create WeightLog entry
     await prisma.weightLog.create({
       data: {
-        user_id: user.id,
+        user_id: authUser.id,
         weight
       }
     })
@@ -60,15 +60,15 @@ export async function logWeight(weight: number) {
 
 export async function getStrengthHistory(days: number = 90) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
 
-  if (!user) return { error: 'Unauthorized', data: [] }
+  if (!authUser) return { error: 'Unauthorized', data: [] }
 
   try {
     const logs = await prisma.workoutExercise.findMany({
       where: {
         workout_log: {
-          user_id: user.id,
+          user_id: authUser.id,
           logged_at: {
             gte: startOfDay(subDays(new Date(), days))
           }
@@ -125,14 +125,14 @@ export async function getStrengthHistory(days: number = 90) {
 
 export async function getPBs() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
 
-  if (!user) return { error: 'Unauthorized', data: [] }
+  if (!authUser) return { error: 'Unauthorized', data: [] }
 
   try {
     const logs = await prisma.workoutExercise.findMany({
       where: {
-        workout_log: { user_id: user.id },
+        workout_log: { user_id: authUser.id },
         weight: { gt: 0 }
       },
       include: {
@@ -147,6 +147,7 @@ export async function getPBs() {
     logs.forEach(log => {
       if (!pbMap[log.exercise_id]) {
         pbMap[log.exercise_id] = {
+          id: log.exercise_id,
           name: log.exercise.name,
           weight: log.weight,
           date: log.workout_log.logged_at,
@@ -159,5 +160,45 @@ export async function getPBs() {
   } catch (e) {
     console.error('Error fetching PBs:', e)
     return { error: 'Failed to fetch PB data', data: [] }
+  }
+}
+
+export async function getPBHistory(exerciseId: string) {
+  const supabase = await createClient()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
+
+  if (!authUser) return { error: 'Unauthorized', data: [] }
+
+  try {
+    const logs = await prisma.workoutExercise.findMany({
+      where: {
+        workout_log: { user_id: authUser.id },
+        exercise_id: exerciseId,
+        weight: { gt: 0 }
+      },
+      include: {
+        workout_log: { select: { logged_at: true } }
+      },
+      orderBy: {
+        workout_log: { logged_at: 'asc' }
+      }
+    })
+
+    // Filter to only include records that were a PB at the time
+    let currentPB = 0
+    const pbTimeline = logs.filter(log => {
+      if (log.weight! > currentPB) {
+        currentPB = log.weight!
+        return true
+      }
+      return false
+    }).map(log => ({
+      weight: log.weight,
+      date: log.workout_log.logged_at
+    }))
+
+    return { data: pbTimeline }
+  } catch (e) {
+    return { error: 'Failed to fetch PB history', data: [] }
   }
 }

@@ -1,9 +1,11 @@
 'use client'
 
 import { useI18n } from '@/hooks/useI18n'
+import Link from 'next/link'
 
 interface PBWallOfFameProps {
   pbs: {
+    id: string
     name: string
     weight: number
     date: Date
@@ -18,9 +20,17 @@ export default function PBWallOfFame({ pbs }: PBWallOfFameProps) {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-baseline justify-between ml-1">
-         <h2 className="font-mono text-xs font-bold text-zinc-500 uppercase tracking-[0.2em]">Wall of Fame (PB Records)</h2>
-         <span className="font-mono text-[8px] text-[#00FF41]">● VERIFIED_STATS</span>
+      <div className="flex items-center justify-between px-1">
+         <div className="flex items-baseline gap-4">
+            <h2 className="font-mono text-xs font-bold text-zinc-500 uppercase tracking-[0.2em]">Wall of Fame (PB Records)</h2>
+            <span className="font-mono text-[8px] text-[#00FF41]">● VERIFIED_STATS</span>
+         </div>
+         <Link 
+           href="/progress/pbs"
+           className="font-mono text-[8px] font-bold text-[#00FF41] border border-[#00FF41]/30 px-3 py-1 rounded-full hover:bg-[#00FF41]/10 transition-all uppercase"
+         >
+           VIEW_FULL_ARCHIVE
+         </Link>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
