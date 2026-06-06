@@ -10,6 +10,9 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
+    "@capgo/capacitor-health": "^8.6.2",
     "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.10",
     "@prisma/client": "6.19.3",

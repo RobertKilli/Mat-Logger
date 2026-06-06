@@ -3,9 +3,9 @@ stepsCompleted: [step-01-init, step-02-discovery, step-02b-vision, step-02c-exec
 inputDocuments: [proposal.md, docs/planning-artifacts/architecture.md]
 documentCounts: {briefs: 1, research: 0, brainstorming: 0, projectDocs: 1}
 classification:
-  projectType: web_app
+  projectType: Hybrid Mobilapplikasjon (Next.js/Capacitor/Supabase)
   domain: health_fitness
-  complexity: medium
+  complexity: Høy (Multi-platform Health API integrasjon)
   projectContext: brownfield
 releaseMode: single-release
 workflowType: 'prd'
@@ -20,21 +20,34 @@ completedAt: 'fredag 15. mai 2026'
 
 ## Executive Summary
 Mat-Logger er en helhetlig ernærings- og treningsapplikasjon designet for brukere som krever dypere fysiologisk innsikt enn standard kaloritelling. Systemet oversetter komplekse biometriske signaler til håndterbare data for å løse problemet med overtrening og feilernæring. Målguppen er seriøse treningsentusiaster som ønsker å optimere ytelse ved å "lytte til kroppen".
-
 ### Hva gjør dette prosjektet unikt?
-Det som skiller Mat-Logger fra alternativer som MyFitnessPal, er fokuset på sanntids fysiologisk beredskap. Kjerneinnsikten er at effektiv fremgang krever balanse mellom metabolsk belastning (glykemi) og nevrologisk belastning (CNS-tretthet). Gjennom "CNS Fatigue Indicator" og "Glycogen Debt Clock" får brukeren innsikt i sin faktiske restitusjonstilstand, støttet av en kompromissløs "Gram-Only" inntastingsmodell for maksimal dataintegritet.
+Det som skiller Mat-Logger fra alternativer som MyFitnessPal, er fokuset på sanntids fysiologisk beredskap. Kjerneinnsikten er at effektiv fremgang krever balanse mellom metabolsk belastning (glykemi) og nevrologisk belastning (CNS-tretthet). Gjennom "CNS Fatigue Indicator" og "Glycogen Debt Clock" får brukeren innsikt i sin faktiske restitusjonstilstand. Systemet går nå fra rent simulerte modeller til empirisk integrasjon med **Apple HealthKit** og **Samsung Health (via Health Connect)** for å korrelere logget aktivitet med faktiske biometriske data (HRV, RHR, Søvn).
 
 ## Prosjektklassifisering
-- **Prosjekttype:** Webapplikasjon (Next.js/Supabase)
+- **Prosjekttype:** Hybrid Mobilapplikasjon (Next.js/Capacitor/Supabase)
 - **Domene:** Helse og trening (Vitenskapelig/Beregningstung)
-- **Kompleksitet:** Middels (Sanntids metabolsk modellering)
+- **Kompleksitet:** Høy (Multi-platform Health API integrasjon)
 - **Prosjektkontekst:** Brownfield (Bygger på eksisterende arkitektur)
 
 ## Suksesskriterier
 ### Brukersuksess
-- **Aha-opplevelse:** Brukeren justerer dagens trening basert på fysiologiske indikatorer (Glycogen/CNS).
-- **Datatillit:** Matlogging føles sømløs og nøyaktig gjennom "Gram-Only"-modellen.
-### Forretningsmessig suksess
+- **Aha-opplevelse:** Brukeren ser en direkte korrelasjon mellom gårsdagens treningsvolum og dagens HRV-drop i Cockpiten, uavhengig av om de bruker iPhone eller Android.
+- **Datatillit:** Biometriske data hentes automatisk, noe som reduserer behovet for manuell feedback.
+
+## Funksjonelle Krav
+
+### Apple HealthKit Integrasjon (iOS Biometri)
+- **FR24:** Systemet skal kunne hente HRV (Heart Rate Variability) og RHR (Resting Heart Rate) fra Apple Health.
+- **FR25:** Systemet skal hente søvndata (varighet og kvalitet) for å beregne restitusjonsscore.
+- **FR26:** Systemet skal synkronisere aktive kalorier og skritt for å kalibrere "Glycogen Debt Clock" mer nøyaktig.
+- **FR27:** Brukeren må gi eksplisitt samtykke til deling av helsedata via native iOS-dialoger.
+
+### Samsung Health / Health Connect Integrasjon (Android Biometri)
+- **FR28:** Systemet skal kunne hente HRV, RHR og skritt fra Google Health Connect (som støtter Samsung Health).
+- **FR29:** Systemet skal hente søvnanalyse fra Android-økosystemet.
+- **FR30:** Systemet skal støtte bakgrunns-synkronisering av helsedata på Android.
+- **FR31:** Brukeren må gi nødvendige tillatelser i henhold til Androids sikkerhetsmodell for helsedata.
+
 - Mat-Logger etablerer seg som et pålitelig "Body Cockpit" for daglig ytelsesoptimalisering.
 ### Teknisk suksess
 - **Logikkdekning:** 100% testdekning for metabolsk logikk før UI-utvikling.

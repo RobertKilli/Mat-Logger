@@ -19,20 +19,29 @@ export interface GlycogenState {
  * @param weight Current body weight in kg.
  * @param totalCarbs Consumed carbs (g) since "saturation" or last known state.
  * @param hoursPassed Time elapsed since the measurement period started.
+ * @param activeCalories Optional active calories burned (empirical signal).
  */
 export function calculateGlycogenState(
   weight: number,
   totalCarbs: number,
-  hoursPassed: number
+  hoursPassed: number,
+  activeCalories?: number
 ): GlycogenState {
   const maxGrams = weight * MAX_CAPACITY_FACTOR
   
-  // Start at 100% capacity for this MVP model, then subtract debt
-  // In future versions, we should track state across days.
-  const depletion = weight * BASAL_DEPLETION_RATE * hoursPassed
+  // 1. Basal Depletion
+  let depletion = weight * BASAL_DEPLETION_RATE * hoursPassed
+
+  // 2. Active Depletion (Empirical)
+  // 1g of glycogen storage yields ~4 kcal of energy. 
+  // We assume a mix of fuel sources, but for the "Debt Clock" we track the carb component.
+  if (activeCalories && activeCalories > 0) {
+    const carbEnergyFraction = 0.5 // Assume 50% energy comes from glycogen during activity
+    const glycogenBurned = (activeCalories * carbEnergyFraction) / 4
+    depletion += glycogenBurned
+  }
   
-  // Net balance: Added carbs minus basal depletion
-  // (Assuming 100% absorption for MVP)
+  // Net balance: Added carbs minus total depletion
   let currentGrams = maxGrams - depletion + totalCarbs
   
   // Cap at max capacity and floor at 0

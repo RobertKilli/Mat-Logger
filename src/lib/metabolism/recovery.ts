@@ -18,10 +18,14 @@ export interface CNSState {
 /**
  * Calculates current CNS fatigue based on logs and rest time.
  * @param logs List of recent workout logs (category, intensity, timestamp).
+ * @param hrv Optional Heart Rate Variability (ms). 
+ * @param hrvBaseline Optional baseline HRV (ms).
  * @param now Current date context.
  */
 export function calculateCNSFatigue(
   logs: { intensity: number; logged_at: Date }[],
+  hrv?: number,
+  hrvBaseline: number = 60, // Fallback baseline
   now: Date = new Date()
 ): CNSState {
   let accumulatedFatigue = 0
@@ -43,6 +47,19 @@ export function calculateCNSFatigue(
     // 2. Decay fatigue until the next log or 'now'
     const hoursRest = (nextTime.getTime() - log.logged_at.getTime()) / (1000 * 60 * 60)
     accumulatedFatigue *= Math.exp(-LAMBDA * hoursRest)
+  }
+
+  // 3. Biometric Adjustment (HRV)
+  // If HRV is significantly lower than baseline, it amplifies the perceived fatigue.
+  if (hrv && hrv > 0) {
+    const hrvRatio = hrv / hrvBaseline
+    if (hrvRatio < 0.8) {
+      // HRV is 20%+ below baseline -> Elevated sympathetic stress
+      accumulatedFatigue *= 1.5
+    } else if (hrvRatio > 1.2) {
+      // HRV is 20%+ above baseline -> Strong parasympathetic recovery
+      accumulatedFatigue *= 0.7
+    }
   }
 
   // Cap at 100% and floor at 0%

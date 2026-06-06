@@ -16,6 +16,7 @@ This document outlines the architecture for "Mat-Logger", a high-precision nutri
 | Category | Decision | Rationale |
 | :--- | :--- | :--- |
 | **Frontend Framework** | Next.js (App Router) | Best-in-class React framework for SSR/SSG and modern server-centric patterns. |
+| **Mobile Bridge** | Capacitor | Allows Next.js to run as a native iOS/Android app with access to health APIs. |
 | **Backend / Database** | Supabase (PostgreSQL) | Managed database, authentication, and real-time capabilities in one package. |
 | **ORM** | Prisma | Type-safe database access and easy schema management for our "Gram-Only" model. |
 | **State Management** | Zustand | Lightweight and powerful state management for real-time "Cockpit" updates. |
@@ -44,6 +45,7 @@ mat-logger/
 │   │   └── ui/                # Atomiske Tailwind-komponenter
 │   ├── hooks/                 # Custom React hooks (f.eks. useSupabaseRealtime)
 │   ├── lib/                   # Kjerne-logikk og verktøy
+│   │   ├── biometry/          # Unified Health Provider (iOS/Android)
 │   │   ├── metabolism/        # Vitenskapelige formler (Glykogen/CNS)
 │   │   ├── prisma.ts          # Type-sikker databaseklient
 │   │   ├── supabase.ts        # Konfigurert Supabase-klient
@@ -57,6 +59,7 @@ mat-logger/
 ├── next.config.js
 ├── tailwind.config.js
 └── package.json
+```
 
 ## Implementation Patterns
 
@@ -94,6 +97,11 @@ mat-logger/
 - **Components:** `food-library/` routes, `FoodLibraryService`.
 - **Logic:** Allows users to select an existing food, adjust its macros per 100g, and save it as a personal entry.
 
+### Pattern: Biometric Correlation Engine
+**Purpose:** Replacing simulated decay models with empirical data from Apple HealthKit and Google Health Connect.
+- **Components:** `lib/biometry`, `CNSMeter`, `metabolism/recovery.ts`.
+- **Logic:** Abstracted provider layer that normalizes biometric signals from different OS-level health stores into a unified `BiometricRecord` format.
+
 ## Acceptance Criteria for Architecture
 1. The project structure allows for isolated testing of metabolic logic.
 2. Real-time updates via Supabase are supported through dedicated hooks.
@@ -105,13 +113,13 @@ mat-logger/
 ### Coherence Validation ✅
 
 **Decision Compatibility:**
-The combination of Next.js for the interface and Supabase for the data layer provides a robust foundation. Prisma ensures type safety across these boundaries, which is critical for the precision required in metabolic calculations.
+The combination of Next.js for the interface and Supabase for the data layer provides a robust foundation. Prisma ensures type safety across these boundaries, which is critical for the precision required in metabolic calculations. Capacitor enables native access to health APIs on both iOS and Android.
 
 **Pattern Consistency:**
-Implementation patterns like "Standardized API Responses" and "Error Boundaries" are consistently applied across the stack. The naming conventions (kebab-case for routes, snake_case for DB) align with industry standards.
+Implementation patterns like "Standardized API Responses" and "Error Boundaries" are consistently applied across the stack. The naming conventions align with industry standards.
 
 **Structure Alignment:**
-The directory structure clearly separates the "Metabolic Engine" (`src/lib/metabolism`) from the UI components, allowing for isolated testing and future AI enhancements.
+The directory structure clearly separates the "Metabolic Engine" (`src/lib/metabolism`) from the UI components and the new "Biometry" abstraction layer.
 
 ### Requirements Coverage Validation ✅
 
@@ -119,6 +127,7 @@ The directory structure clearly separates the "Metabolic Engine" (`src/lib/metab
 - **Metabolic Motor (FR1-FR5):** Fully supported by the `metabolism/` logic folder and `cockpitStore.ts`.
 - **Data Integrity (FR6-FR10):** Enforced via Prisma's schema and specialized "Scale-Native" forms.
 - **Food Library (FR11-FR13):** Architected under the `food-library/` route with the "Fork & Nudge" pattern.
+- **Biometric Integration (FR24-FR31):** Supported by Capacitor bridge and the Biometric Correlation Engine for both iOS and Android.
 
 **Non-Functional Requirements Coverage:**
 - **Real-time Performance:** Handled by `useSupabaseRealtime` and Zustand.
@@ -128,11 +137,17 @@ The directory structure clearly separates the "Metabolic Engine" (`src/lib/metab
 
 **Decision Completeness:** All core stack decisions are finalized.
 **Structure Completeness:** The complete directory structure is defined down to the utility level.
-**Pattern Completeness:** Novel patterns for the Glycogen Clock and CNS Fatigue are fully specified.
+**Pattern Completeness:** Novel patterns for the Glycogen Clock, CNS Fatigue, and Biometric Correlation are fully specified.
 
 ### Gap Analysis Results
 - **Minor Gap:** Development environment setup (local Supabase CLI vs. Cloud) should be decided during the first implementation step.
-- **Enhancement:** Future integration with wearable data (for more accurate CNS fatigue) could be mapped in Fase 2.
+- **Critical Path:** Native iOS/Android provisioning and Health API entitlements setup required for Empirical mode.
+
+## Deployment Architecture
+- **Web:** Vercel (for dashboard and admin).
+- **Mobile (iOS):** Native App via TestFlight.
+- **Mobile (Android):** Native App via Google Play Internal Testing.
+- **Database:** Supabase Cloud.
 
 ### Architecture Readiness Assessment
 
@@ -141,7 +156,7 @@ The directory structure clearly separates the "Metabolic Engine" (`src/lib/metab
 
 **Key Strengths:**
 - Clear separation of concerns between metabolic logic and UI.
-- Real-time "Cockpit" state management is decoupled from the database.
+- Unified Biometry layer allows for seamless cross-platform health data consumption.
 - "Fork & Nudge" pattern provides a unique UX for rapid food logging.
 
 ### Implementation Handoff
@@ -152,4 +167,4 @@ The directory structure clearly separates the "Metabolic Engine" (`src/lib/metab
 - Respect the `cockpitStore.ts` as the single source of truth for the dashboard.
 
 **First Implementation Priority:**
-Initialize the Next.js project and set up the Prisma schema for the `food_logs` and `food_items` tables.
+Initialize the Next.js project and set up the Prisma schema for the `food_logs`, `food_items`, and `biometric_records` tables.

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { calculateGlycogenState } from '@/lib/metabolism/glycogen'
 import { calculateCNSFatigue } from '@/lib/metabolism/recovery'
+import { syncBiometrics } from '@/lib/biometry/sync'
 
 interface PreviewData {
   protein: number
@@ -68,6 +69,11 @@ interface CockpitState {
   isSyncing: boolean
   syncError: string | null
   
+  // Empirical Biometrics
+  hrv: number | null
+  rhr: number | null
+  activeCalories: number | null
+  
   setBaseline: (data: { 
     weight: number | null, 
     proteinGoal: number, 
@@ -95,6 +101,7 @@ interface CockpitState {
   clearMealBuilder: () => void
   setIsSyncing: (isSyncing: boolean) => void
   setSyncError: (error: string | null) => void
+  syncHealthData: () => Promise<void>
   updateMetabolicState: () => void
   updateGlycogen: (level: number) => void
   updateCNS: (level: number) => void
@@ -124,6 +131,9 @@ export const useCockpitStore = create<CockpitState>()(
       mealBuilderQueue: [],
       isSyncing: false,
       syncError: null,
+      hrv: null,
+      rhr: null,
+      activeCalories: null,
       
       setBaseline: (data) => {
         set({ 
@@ -194,20 +204,43 @@ export const useCockpitStore = create<CockpitState>()(
       clearMealBuilder: () => set({ mealBuilderQueue: [] }),
       setIsSyncing: (isSyncing) => set({ isSyncing }),
       setSyncError: (syncError) => set({ syncError }),
+      syncHealthData: async () => {
+        set({ isSyncing: true, syncError: null })
+        try {
+          const result = await syncBiometrics()
+          // Update local state with latest values if available from the result
+          if (result && result.latestData) {
+             set({
+               hrv: result.latestData.hrv ?? get().hrv,
+               rhr: result.latestData.rhr ?? get().rhr,
+               activeCalories: result.latestData.activeCalories ?? get().activeCalories,
+             })
+          }
+          set({ isSyncing: false })
+          get().updateMetabolicState()
+        } catch (error: any) {
+          set({ isSyncing: false, syncError: error.message })
+        }
+      },
       updateMetabolicState: () => {
-        const { weight, dailyConsumedCarbs, recentWorkoutLogs, dailyFoodLogs } = get()
+        const { weight, dailyConsumedCarbs, recentWorkoutLogs, dailyFoodLogs, hrv, activeCalories } = get()
         
-        // 1. Glycogen Update
+        // 1. Glycogen Update (Augmented by empirical active calories)
         if (weight) {
           const now = new Date()
           const hoursToday = now.getHours() + now.getMinutes() / 60
-          const glycogen = calculateGlycogenState(weight, dailyConsumedCarbs, hoursToday)
+          const glycogen = calculateGlycogenState(
+            weight, 
+            dailyConsumedCarbs, 
+            hoursToday, 
+            activeCalories ?? undefined
+          )
           set({ glycogenLevel: glycogen.percentage })
         }
 
-        // 2. CNS Update
+        // 2. CNS Update (Augmented by empirical HRV)
         if (recentWorkoutLogs && recentWorkoutLogs.length > 0) {
-          const cns = calculateCNSFatigue(recentWorkoutLogs)
+          const cns = calculateCNSFatigue(recentWorkoutLogs, hrv ?? undefined)
           set({ cnsFatigue: cns.percentage, cnsRecoveryHours: cns.recoveryTimeHours })
         } else {
           set({ cnsFatigue: 0, cnsRecoveryHours: 0 })
@@ -255,6 +288,9 @@ export const useCockpitStore = create<CockpitState>()(
         pendingSyncQueue: state.pendingSyncQueue,
         mealBuilderQueue: state.mealBuilderQueue,
         recentWorkoutLogs: state.recentWorkoutLogs,
+        hrv: state.hrv,
+        rhr: state.rhr,
+        activeCalories: state.activeCalories,
       }),
       onRehydrateStorage: () => (state) => {
         if (state && state.recentWorkoutLogs) {

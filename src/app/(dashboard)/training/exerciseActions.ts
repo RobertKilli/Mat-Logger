@@ -33,16 +33,26 @@ export async function refreshExerciseImage(exerciseId: string) {
 export async function batchGenerateImages() {
   try {
     const exercises = await prisma.exercise.findMany({
-      where: { image_url: null }
+      where: { image_url: null },
+      take: 5
     })
 
-    // Process only a few at a time to avoid rate limits
-    const target = exercises.slice(0, 5)
+    if (exercises.length === 0) return { success: true, count: 0, updatedExercises: [] }
 
-    const results = await Promise.all(target.map(ex => refreshExerciseImage(ex.id)))
+    const results = await Promise.all(exercises.map(async (ex) => {
+      const res = await refreshExerciseImage(ex.id)
+      return res.success ? { id: ex.id, imageUrl: res.imageUrl } : null
+    }))
 
-    return { success: true, count: results.filter(r => r.success).length }
+    const updated = results.filter(r => r !== null)
+
+    return { 
+      success: true, 
+      count: updated.length,
+      updatedExercises: updated 
+    }
   } catch (e) {
+    console.error('Batch generation failed:', e)
     return { error: 'Batch generation failed' }
   }
 }

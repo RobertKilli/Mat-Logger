@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { TrainingCategory, Exercise } from '@prisma/client'
 import { useI18n } from '@/hooks/useI18n'
-import { refreshExerciseImage } from '@/app/(dashboard)/training/exerciseActions'
+import { refreshExerciseImage, batchGenerateImages } from '@/app/(dashboard)/training/exerciseActions'
 
 interface ExerciseLibraryContentProps {
   exercises: Exercise[]
@@ -16,6 +16,8 @@ export default function ExerciseLibraryContent({ exercises: initialExercises, pb
   const [activeCategory, setCategory] = useState<TrainingCategory | 'ALL'>('PUSH')
   const [search, setSearch] = useState('')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [isBatching, setIsBatching] = useState(false)
+  const [batchError, setBatchError] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
     return exercises.filter(ex => {
@@ -25,19 +27,79 @@ export default function ExerciseLibraryContent({ exercises: initialExercises, pb
     })
   }, [exercises, activeCategory, search])
 
+  const missingCount = exercises.filter(ex => !ex.image_url).length
+
   async function handleRefresh(id: string) {
     setUpdatingId(id)
-    const res = await refreshExerciseImage(id)
-    if (res.success && res.imageUrl) {
-      setExercises(prev => prev.map(ex => 
-        ex.id === id ? { ...ex, image_url: res.imageUrl } : ex
-      ))
+    try {
+      const res = await refreshExerciseImage(id)
+      if (res.success && res.imageUrl) {
+        setExercises(prev => prev.map(ex => 
+          ex.id === id ? { ...ex, image_url: res.imageUrl } : ex
+        ))
+      } else {
+        alert(res.error || 'Kunne ikke generere bilde. Sjekk API-nøkkel.')
+      }
+    } catch (e) {
+      alert('Kritisk systemfeil ved bildeoppdatering.')
+    } finally {
+      setUpdatingId(null)
     }
-    setUpdatingId(null)
+  }
+
+  async function handleBatchInit() {
+    setIsBatching(true)
+    setBatchError(null)
+    try {
+      const res = await batchGenerateImages()
+      if (res.success && res.updatedExercises) {
+        const updates = res.updatedExercises
+        if (updates.length === 0) {
+          setBatchError('Ingen bilder ble generert. Sjekk at OPENAI_API_KEY er korrekt konfigurert i .env.')
+        }
+        setExercises(prev => prev.map(ex => {
+          const update = updates.find((u: any) => u.id === ex.id)
+          return update ? { ...ex, image_url: update.imageUrl } : ex
+        }))
+      } else {
+        setBatchError(res.error || 'Batch-prosess feilet. Sjekk systemloggene.')
+      }
+    } catch (e) {
+      setBatchError('Kritisk systemfeil under bildegenerering.')
+    } finally {
+      setIsBatching(false)
+    }
   }
 
   return (
     <div className="space-y-8">
+      {/* Batch Initialization Row */}
+      {missingCount > 0 && (
+         <div className="rounded-3xl bg-[#3B82F6]/5 p-6 ring-1 ring-[#3B82F6]/20 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl border border-[#3B82F6]/10">
+            <div className="flex flex-col gap-2">
+               <div className="flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-full bg-[#3B82F6]/10 flex items-center justify-center text-[#3B82F6]">
+                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/></svg>
+                  </div>
+                  <div>
+                     <h3 className="font-mono text-xs font-bold text-white uppercase tracking-wider">Visual_Payload_Missing</h3>
+                     <p className="font-mono text-[9px] text-zinc-500 uppercase">{missingCount} øvelser mangler AI-illustrasjoner</p>
+                  </div>
+               </div>
+               {batchError && (
+                  <p className="font-mono text-[8px] text-red-500 uppercase ml-14">⚠️ ERROR: {batchError}</p>
+               )}
+            </div>
+            <button 
+              disabled={isBatching}
+              onClick={handleBatchInit}
+              className={`font-mono text-[10px] font-black px-6 py-3 rounded-xl transition-all shadow-lg ${isBatching ? 'bg-zinc-800 text-zinc-600 animate-pulse' : 'bg-[#3B82F6] text-white hover:scale-105 active:scale-95'}`}
+            >
+              {isBatching ? 'GENERATING_BATCH...' : `INITIALIZE_VISUALS (5)`}
+            </button>
+         </div>
+      )}
+
       {/* Controls */}
       <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-2 p-1 bg-white/5 rounded-full ring-1 ring-white/10">
