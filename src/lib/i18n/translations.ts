@@ -22,6 +22,7 @@ export const translations = {
       remaining: 'Gjenstår',
       status: 'Live_Operations',
       no_logs: 'Ingen aktive operasjoner registrert',
+      pick_date: 'VELG DATO',
     },
     navigation: {
       library: 'ÅPNE BIBLIOTEK',
